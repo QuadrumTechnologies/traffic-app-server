@@ -1,0 +1,49 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+          HOST: ${{ secrets.HOST }}
+          USER: ${{ secrets.USER }}
+        run: |
+          # Ensure the .ssh directory exists
+          mkdir -p ~/.ssh
+
+          # Write the SSH private key to a file
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/private_key.pem
+          chmod 600 ~/.ssh/private_key.pem
+
+          # Add the EC2 instance to known_hosts to avoid interactive prompts
+          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
+
+      - name: Deploy to EC2
+        env:
+          HOST: ${{ secrets.HOST }}
+          USER: ${{ secrets.USER }}
+        run: |
+          ssh -i ~/.ssh/private_key.pem $USER@$HOST << 'EOF'
+            # Navigate to your project directory
+            cd /home/ubuntu/traffic-app-server
+
+            # Pull the latest code from the repository
+            git pull origin main
+
+            # Install dependencies
+            npm install
+
+            # Restart the application with PM2
+            pm2 restart traffic-app-v1 || pm2 start wss_server.js --name traffic-app-v1
+          EOF
