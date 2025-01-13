@@ -11,13 +11,13 @@ class Email {
     this.to = user.email;
     this.firstName = user.name.split(" ")[0];
     this.url = url;
-    this.from = `Joel Ojerinde <${process.env.EMAIL_USERNAME}>`;
+    this.from = `Traffic Signal <${process.env.EMAIL_USERNAME}>`;
   }
 
   newTransport() {
     if (process.env.NODE_ENV === "production") {
       return nodemailer.createTransport({
-        host: "smtp.gmail.com",
+        host: "smtp.zoho.com",
         port: 465,
         secure: true,
         auth: {
