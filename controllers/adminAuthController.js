@@ -92,8 +92,8 @@ exports.signup = catchAsync(async (req, res, next) => {
 });
 
 exports.verifyEmail = catchAsync(async (req, res, next) => {
+  console.log("emailVerificationtoken", req.params);
   const { emailVerificationToken } = req.params;
-  console.log("emailVerificationtoken", emailVerificationToken);
 
   const hashedToken = crypto
     .createHash("sha256")

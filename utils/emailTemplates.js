@@ -53,7 +53,7 @@ exports.generateEmailVerificationHTML = function (
         <body>
             <div class="container">
                 <div class="header">
-                   <img src="https://schooltry-tertiary-2.s3.eu-west-1.amazonaws.com/institutionLogos/Unilorin_6500995e76d79.jpeg" alt="Unilorin">
+                   <img src="https://pixabay.com/vectors/traffic-light-red-black-green-24177/" alt="Traffic">
                 </div>
                 <div class="content">
                     <h1>Hello, ${firstName}!</h1>
@@ -124,7 +124,7 @@ exports.generateResetPasswordHTML = function (firstName, resetPasswordUrl) {
         <body>
             <div class="container">
                 <div class="header">
-                     <img src="https://schooltry-tertiary-2.s3.eu-west-1.amazonaws.com/institutionLogos/Unilorin_6500995e76d79.jpeg" alt="Unilorin">
+                     <img src="https://pixabay.com/vectors/traffic-light-red-black-green-24177/" alt="Traffic">
                 </div>
                 <div class="content">
                     <h1>Password Reset</h1>
@@ -186,7 +186,7 @@ exports.generateResetPasswordSuccessHTML = function () {
         <body>
             <div class="container">
                 <div class="header">
-                <img src="https://schooltry-tertiary-2.s3.eu-west-1.amazonaws.com/institutionLogos/Unilorin_6500995e76d79.jpeg" alt="Unilorin">
+                <img src="https://pixabay.com/vectors/traffic-light-red-black-green-24177/" alt="Traffic">
                 </div>
                 <div class="content">
                     <h1>Password Reset Successful</h1>
@@ -255,7 +255,7 @@ const generateBaseHTML = function (content) {
       <body>
           <div class="container">
               <div class="header">
-                  <img src="https://schooltry-tertiary-2.s3.eu-west-1.amazonaws.com/institutionLogos/Unilorin_6500995e76d79.jpeg" alt="Unilorin">
+                  <img src="https://pixabay.com/vectors/traffic-light-red-black-green-24177/" alt="Traffic">
               </div>
               <div class="content">
                   <h1>${content.heading}</h1>
