@@ -17,6 +17,7 @@ exports.infoDataRequestHandler = catchAsync(async (ws, clients, payload) => {
     );
   });
 });
+
 exports.infoDataHandler = catchAsync(async (ws, clients, payload) => {
   console.log("Received info data from Hardware", payload);
   const { DeviceID, Rtc, Plan, Period } = payload || {};
@@ -65,6 +66,7 @@ exports.infoDataHandler = catchAsync(async (ws, clients, payload) => {
   }
 
   let deviceInfo = await UserDeviceInfo.findOne({ DeviceID });
+  console.log("JunctionID", payload?.JunctionId);
 
   if (deviceInfo) {
     deviceInfo.North = North;
