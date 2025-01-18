@@ -17,19 +17,19 @@ exports.manualControlHandler = catchAsync(async (ws, clients, payload) => {
   const phaseSignal = `*X${initialSignalStrings}`;
 
   // Send the initial phase signal to the clients
-  clients.forEach((client) => {
-    // if (client.clientType !== payload.DeviceID) return;
-    client.send(
-      JSON.stringify({
-        Event: "ctrl",
-        Type: "sign",
-        Param: {
-          DeviceID: payload.DeviceID,
-          Phase: phaseSignal,
-        },
-      })
-    );
-  });
+  // clients.forEach((client) => {
+  //   if (client.clientType !== payload.DeviceID) return;
+  //   client.send(
+  //     JSON.stringify({
+  //       Event: "ctrl",
+  //       Type: "sign",
+  //       Param: {
+  //         DeviceID: payload.DeviceID,
+  //         Phase: phaseSignal,
+  //       },
+  //     })
+  //   );
+  // });
 
   // Wait for 1s before proceeding to the blink logic
   setTimeout(() => {
@@ -45,7 +45,7 @@ exports.manualControlHandler = catchAsync(async (ws, clients, payload) => {
         }
         setTimeout(() => {
           clients.forEach((client) => {
-            // if (client.clientType !== payload.DeviceID) return;
+            if (client.clientType !== payload.DeviceID) return;
             client.send(
               JSON.stringify({
                 Event: "ctrl",
