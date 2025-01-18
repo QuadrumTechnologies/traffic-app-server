@@ -45,7 +45,7 @@ exports.manualControlHandler = catchAsync(async (ws, clients, payload) => {
         }
         setTimeout(() => {
           clients.forEach((client) => {
-            if (client.clientType !== payload.DeviceID) return;
+            // if (client.clientType !== payload.DeviceID) return;
             client.send(
               JSON.stringify({
                 Event: "ctrl",
