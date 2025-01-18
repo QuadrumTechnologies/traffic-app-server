@@ -88,7 +88,7 @@ exports.infoDataHandler = catchAsync(async (ws, clients, payload) => {
       Rtc,
       Plan,
       Period,
-      JunctionId,
+      JunctionId: payload?.JunctionId,
     });
   }
 
