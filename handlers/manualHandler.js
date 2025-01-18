@@ -138,6 +138,22 @@ exports.manualControlHandler = catchAsync(async (ws, clients, payload) => {
           );
         });
       }, amberDurationGreenToRed * 1000);
+    } else {
+      // Just send the new signal if neither blink nor amber is enabled
+      const newPhaseSignal = `*${duration}${signalString}`;
+      clients.forEach((client) => {
+        //   if (client.clientType !== payload.DeviceID) return;
+        client.send(
+          JSON.stringify({
+            Event: "ctrl",
+            Type: "sign",
+            Param: {
+              DeviceID: payload.DeviceID,
+              Phase: newPhaseSignal,
+            },
+          })
+        );
+      });
     }
   }, 1000);
 });
