@@ -1,17 +1,8 @@
 const catchAsync = require("../utils/catchAsync");
+const { dayToNum } = require("./uploadHandler");
 
 exports.downloadRequestHandler = catchAsync(async (ws, clients, payload) => {
   console.log("Received download request data from Client", payload);
-
-  const dayToNum = {
-    MONDAY: "0",
-    TUESDAY: "1",
-    WEDNESDAY: "2",
-    THURSDAY: "3",
-    FRIDAY: "4",
-    SATURDAY: "5",
-    SUNDAY: "6",
-  };
 
   console.log("Download", {
     Event: "ctrl",

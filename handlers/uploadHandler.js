@@ -1,6 +1,26 @@
 const { UserPattern } = require("../models/appModel");
 const catchAsync = require("../utils/catchAsync");
 
+exports.dayToNum = {
+  SUNDAY: "0",
+  MONDAY: "1",
+  TUESDAY: "2",
+  WEDNESDAY: "3",
+  THURSDAY: "4",
+  FRIDAY: "5",
+  SATURDAY: "6",
+};
+
+exports.numToDay = {
+  0: "SUNDAY",
+  1: "MONDAY",
+  2: "TUESDAY",
+  3: "WEDNESDAY",
+  4: "THURSDAY",
+  5: "FRIDAY",
+  6: "SATURDAY",
+};
+
 exports.uploadRequestHandler = catchAsync(async (ws, clients, payload) => {
   console.log("Received upload request data from Client", payload);
 
@@ -39,7 +59,6 @@ exports.uploadRequestHandler = catchAsync(async (ws, clients, payload) => {
     }\n`;
 
     // If prev signal is not the same with current signal, send blink
-
     // If BlinkEnabled, toggle between original and modified signal strings
     if (patternSettings.BlinkEnabled) {
       let blinkCount = patternSettings.BlinkTimeGreenToRed;
@@ -59,22 +78,17 @@ exports.uploadRequestHandler = catchAsync(async (ws, clients, payload) => {
     }
   });
 
-  const dayToNum = {
-    MONDAY: "0",
-    TUESDAY: "1",
-    WEDNESDAY: "2",
-    THURSDAY: "3",
-    FRIDAY: "4",
-    SATURDAY: "5",
-    SUNDAY: "6",
-  };
+  const planValue =
+    payload.plan === "CUSTOM" && payload.customDateUnix
+      ? payload.customDateUnix
+      : exports.dayToNum[payload.plan];
 
   console.log("Generated Data:\n", patternString.trim(), {
     Event: "ctrl",
     Type: "program",
     Param: {
       DeviceID: payload.DeviceID,
-      Plan: dayToNum[payload.plan],
+      Plan: planValue,
       Period: payload.timeSegmentString,
       Pattern: patternString.trim(),
     },
@@ -89,7 +103,7 @@ exports.uploadRequestHandler = catchAsync(async (ws, clients, payload) => {
         Type: "prog",
         Param: {
           DeviceID: payload.DeviceID,
-          Plan: dayToNum[payload.plan],
+          Plan: planValue,
           Period: payload.timeSegmentString,
           Pattern: patternString.trim(),
         },
@@ -102,15 +116,7 @@ exports.uploadHandler = catchAsync(async (ws, clients, payload) => {
   const { DeviceID, Plan, Period } = payload || {};
 
   const modifiedPeriod = Period?.slice(1, 6);
-  const numToDay = {
-    0: "MONDAY",
-    1: "TUESDAY",
-    2: "WEDNESDAY",
-    3: "THURSDAY",
-    4: "FRIDAY",
-    5: "SATURDAY",
-    6: "SUNDAY",
-  };
+
   return clients.forEach((client) => {
     if (client.clientType === payload.DeviceID) return;
     client.send(
@@ -118,7 +124,7 @@ exports.uploadHandler = catchAsync(async (ws, clients, payload) => {
         event: "upload_feedback",
         payload: {
           DeviceID,
-          Plan: numToDay[Plan],
+          Plan: exports.numToDay[Plan],
           Period: modifiedPeriod,
         },
       })
