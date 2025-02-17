@@ -21,7 +21,7 @@ exports.addDeviceByAdminHandler = catchAsync(async (req, res, next) => {
   if (existingDevice) {
     return res.status(400).json({ message: "Device already exists." });
   }
-  const department = email.slice(0, email.indexOf("@"));
+  const department = adminEmail.slice(0, adminEmail.indexOf("@"));
 
   const newDevice = await AdminDevice.create({
     deviceId,
