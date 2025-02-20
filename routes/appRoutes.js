@@ -34,4 +34,13 @@ router.post("/confirm-password", appController.confirmPasswordHandler);
 router.get("/info/:deviceID", appController.getDeviceInfoByDeviceIDHandler);
 router.get("/state/:deviceID", appController.getDeviceStateByDeviceIDHandler);
 
+router.get(
+  "/user-devices/:deviceID",
+  appController.getDeviceFullDetailsByDeviceIDHandler
+);
+router.patch(
+  "/user-devices/:deviceID",
+  appController.updateAllowAdminSupportHandler
+);
+
 module.exports = router;

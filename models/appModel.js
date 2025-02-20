@@ -25,6 +25,14 @@ const userDeviceSchema = new Schema({
     type: Date,
     default: Date.now,
   },
+  status: {
+    type: String,
+    enum: ["active", "disabled", "recalled", "deleted"],
+    default: "active",
+  },
+  allowAdminSupport: { type: Boolean, default: false },
+  isTrash: { type: Boolean, default: false },
+  deletedAt: { type: Date, default: null },
 });
 
 const userPhaseSchema = new Schema({

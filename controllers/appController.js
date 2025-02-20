@@ -587,3 +587,45 @@ exports.getDeviceStateByDeviceIDHandler = catchAsync(async (req, res) => {
     data: state,
   });
 });
+
+exports.getDeviceFullDetailsByDeviceIDHandler = catchAsync(async (req, res) => {
+  console.log("Getting device full details by device ID", req.params);
+  const { deviceID } = req.params;
+
+  const device = await UserDevice.findOne({ deviceId: deviceID });
+
+  if (!device) {
+    return res.status(404).json({
+      message: "Device not found.",
+    });
+  }
+
+  res.status(200).json({
+    message: "Device full details fetched successfully.",
+    data: device,
+  });
+});
+
+exports.updateAllowAdminSupportHandler = catchAsync(async (req, res) => {
+  console.log("Updating allowAdminSupport", req.params, req.body);
+  const { deviceID } = req.params;
+  const { allowAdminSupport } = req.body;
+
+  // Check if the device exists
+  const device = await UserDevice.findOne({ deviceId: deviceID });
+  if (!device) {
+    return res.status(404).json({
+      message: "Device not found.",
+    });
+  }
+
+  device.allowAdminSupport = allowAdminSupport;
+  await device.save();
+
+  console.log("Device updated", device);
+
+  res.status(200).json({
+    message: "Admin support status updated successfully.",
+    data: device,
+  });
+});
