@@ -1,5 +1,7 @@
 const { AdminDevice } = require("../models/adminAppModel");
+const AdminUser = require("../models/adminUserModel");
 const { UserDevice } = require("../models/appModel");
+
 const catchAsync = require("../utils/catchAsync");
 
 exports.addDeviceByAdminHandler = catchAsync(async (req, res, next) => {
@@ -68,5 +70,54 @@ exports.getAllDeviceByAdminHandler = catchAsync(async (req, res, next) => {
   return res.status(200).json({
     message: "Devices fetched successfully.",
     devices: devicesWithUserData,
+  });
+});
+
+exports.deleteDeviceByAdminHandler = catchAsync(async (req, res, next) => {
+  console.log("Deleting device", req.params);
+  const { deviceId } = req.params;
+
+  if (!deviceId) {
+    return res.status(400).json({ message: "Device ID is required." });
+  }
+
+  // Check if the device exists in AdminDevice
+  const existingDevice = await AdminDevice.findOne({ deviceId });
+  if (!existingDevice) {
+    return res.status(404).json({ message: "Device not found." });
+  }
+
+  // Delete device from AdminDevice collection
+  await AdminDevice.deleteOne({ deviceId });
+
+  // Delete device from UserDevice collection
+  await UserDevice.deleteOne({ deviceId });
+
+  res.status(200).json({
+    message: "Device deleted successfully.",
+  });
+});
+
+exports.confirmAdminPasswordHandler = catchAsync(async (req, res) => {
+  const { email, password } = req.body;
+
+  const user = await AdminUser.findOne({ email }).select("+password");
+
+  if (!user) {
+    return res.status(404).json({
+      message: "User not found.",
+    });
+  }
+
+  const isPasswordCorrect = await user.correctPassword(password);
+
+  if (!isPasswordCorrect) {
+    return res.status(401).json({
+      message: "Incorrect password.",
+    });
+  }
+
+  res.status(200).json({
+    message: "Password confirmed.",
   });
 });
