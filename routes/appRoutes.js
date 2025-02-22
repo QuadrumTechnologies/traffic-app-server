@@ -3,11 +3,14 @@ const router = express.Router();
 const appController = require("../controllers/appController");
 const { authenticateUser } = require("../controllers/authController");
 
+router.get("/devices/:deviceId/:email", appController.getDeviceDetailById);
+router.get("/info/:deviceID", appController.getDeviceInfoByDeviceIDHandler);
+router.get("/state/:deviceID", appController.getDeviceStateByDeviceIDHandler);
+
 router.use(authenticateUser);
 
 router.post("/devices", appController.addDeviceByUserHandler);
 router.get("/devices", appController.getAllDeviceByUserHandler);
-router.get("/devices/:deviceId/:email", appController.getDeviceDetailById);
 
 router.post("/phases", appController.addPhaseByUserHandler);
 router.get("/phases", appController.getAllPhaseByUserHandler);
@@ -33,9 +36,6 @@ router.get("/plans", appController.getAllPlansByUserHandler);
 router.delete("/plans/:planId/:email", appController.deletePlanByUserHandler);
 
 router.post("/confirm-password", appController.confirmPasswordHandler);
-
-router.get("/info/:deviceID", appController.getDeviceInfoByDeviceIDHandler);
-router.get("/state/:deviceID", appController.getDeviceStateByDeviceIDHandler);
 
 router.get(
   "/user-devices/:deviceID",

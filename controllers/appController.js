@@ -12,8 +12,8 @@ const catchAsync = require("../utils/catchAsync");
 const { generateSecretKey } = require("../utils/misc");
 
 exports.getDeviceDetailById = catchAsync(async (req, res, next) => {
-  console.log("Getting device detail by user", req.user.email);
-  const { deviceId } = req.params;
+  console.log("Getting device detail by user");
+  const { deviceId, email } = req.params;
 
   const existingDevice = await AdminDevice.findOne({ deviceId: deviceId });
 
@@ -26,8 +26,7 @@ exports.getDeviceDetailById = catchAsync(async (req, res, next) => {
 
   if (
     existingDevice.deviceStatus.ownerEmail &&
-    existingDevice.deviceStatus.ownerEmail.toLowerCase() !==
-      req.user.email.toLowerCase()
+    existingDevice.deviceStatus.ownerEmail.toLowerCase() !== email.toLowerCase()
   ) {
     return res
       .status(403)
