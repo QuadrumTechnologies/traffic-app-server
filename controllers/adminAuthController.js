@@ -22,7 +22,10 @@ const createSendToken = (user, statusCode, req, res) => {
   };
 
   // Secure cookin for production
-  if (process.env.NODE_ENV === "production") cookieOptions.secure = true;
+  if (process.env.NODE_ENV === "production") {
+    cookieOptions.secure = true;
+    cookieOptions.sameSite = "strict";
+  }
 
   // sends jwt as cookie to the client
   res.cookie("jwt", adminToken, cookieOptions);
@@ -65,6 +68,37 @@ const sendVerificationEmail = async (user, req, res, next) => {
     });
   }
 };
+
+exports.authenticateAdminUser = catchAsync(async (req, res, next) => {
+  console.log("Authenticating admin user");
+  let token;
+
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith("Bearer ")) {
+    token = authHeader.split(" ")[1];
+  }
+
+  // Fallback to cookie
+  if (!token) {
+    token = req.cookies.jwt;
+  }
+
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const currentUser = await AdminUser.findById(decoded.id);
+    if (!currentUser) {
+      return res.status(401).json({ message: "Admin User no longer exists" });
+    }
+    req.user = currentUser;
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: "Invalid token" });
+  }
+});
 
 exports.signup = catchAsync(async (req, res, next) => {
   console.log("Signing up for ", req.body);

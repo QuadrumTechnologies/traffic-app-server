@@ -5,7 +5,6 @@ const {
   UserPattern,
   UserPlan,
   UserDeviceState,
-  UserDeviceActivity,
   UserDeviceInfo,
 } = require("../models/appModel");
 const User = require("../models/userModel");
@@ -13,8 +12,8 @@ const catchAsync = require("../utils/catchAsync");
 const { generateSecretKey } = require("../utils/misc");
 
 exports.getDeviceDetailById = catchAsync(async (req, res, next) => {
-  console.log("Getting device detail by user", req.params);
-  const { deviceId, userEmail } = req.params;
+  console.log("Getting device detail by user", req.user.email);
+  const { deviceId } = req.params;
 
   const existingDevice = await AdminDevice.findOne({ deviceId: deviceId });
 
@@ -28,7 +27,7 @@ exports.getDeviceDetailById = catchAsync(async (req, res, next) => {
   if (
     existingDevice.deviceStatus.ownerEmail &&
     existingDevice.deviceStatus.ownerEmail.toLowerCase() !==
-      userEmail.toLowerCase()
+      req.user.email.toLowerCase()
   ) {
     return res
       .status(403)
@@ -47,10 +46,10 @@ exports.getDeviceDetailById = catchAsync(async (req, res, next) => {
 });
 
 exports.addDeviceByUserHandler = catchAsync(async (req, res, next) => {
-  console.log("Adding device by user", req.body);
-  const { deviceId, deviceType, email } = req.body;
+  console.log("Adding device by user", req.user.email);
+  const { deviceId, deviceType } = req.body;
 
-  if (!deviceId || !deviceType || !email) {
+  if (!deviceId || !deviceType || !req.user.email) {
     return res.status(400).json({ message: "All fields are required." });
   }
 
@@ -69,7 +68,7 @@ exports.addDeviceByUserHandler = catchAsync(async (req, res, next) => {
   const newDevice = await UserDevice.create({
     deviceId,
     deviceType,
-    email,
+    email: req.user.email,
     secretKey,
   });
 
@@ -83,9 +82,8 @@ exports.addDeviceByUserHandler = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllDeviceByUserHandler = catchAsync(async (req, res, next) => {
-  console.log("Getting all devices by user");
-  const { email } = req.params;
-  const devices = await UserDevice.find({ email });
+  console.log("Getting all devices by user", req.user.email);
+  const devices = await UserDevice.find({ email: req.user.email });
 
   return res.status(200).json({
     devices,
@@ -95,10 +93,10 @@ exports.getAllDeviceByUserHandler = catchAsync(async (req, res, next) => {
 exports.addPhaseByUserHandler = catchAsync(async (req, res, next) => {
   console.log("Adding Phase by user", req.body);
 
-  const { email, phaseName, phaseData } = req.body;
+  const { phaseName, phaseData } = req.body;
 
   // Check if phases already exist for the user
-  const userPhase = await UserPhase.findOne({ email });
+  const userPhase = await UserPhase.findOne({ email: req.user.email });
 
   // Check for existing phase name
   if (userPhase) {
@@ -119,7 +117,7 @@ exports.addPhaseByUserHandler = catchAsync(async (req, res, next) => {
   };
 
   const updatedPhase = await UserPhase.findOneAndUpdate(
-    { email },
+    { email: req.user.email },
     { $push: { phases: phase } },
     { upsert: true, new: true }
   );
@@ -133,8 +131,7 @@ exports.addPhaseByUserHandler = catchAsync(async (req, res, next) => {
 exports.getAllPhaseByUserHandler = catchAsync(async (req, res, next) => {
   console.log("Getting Phase by user", req.params);
 
-  const { email } = req.params;
-  const phases = await UserPhase.findOne({ email });
+  const phases = await UserPhase.findOne({ email: req.user.email });
   if (!phases || phases.length === 0) {
     return res.status(404).json({
       message: "No phase found for this user",
@@ -147,10 +144,10 @@ exports.getAllPhaseByUserHandler = catchAsync(async (req, res, next) => {
 
 exports.deletePhaseByUserHandler = catchAsync(async (req, res) => {
   console.log("Deleting phase by user", req.params);
-  const { phaseId, email } = req.params;
+  const { phaseId } = req.params;
 
   const updatedUser = await UserPhase.findOneAndUpdate(
-    { email },
+    { email: req.user.email },
     { $pull: { phases: { _id: phaseId } } },
     { new: true }
   );
@@ -168,7 +165,6 @@ exports.addPatternByUserHandler = catchAsync(async (req, res) => {
   console.log("Adding pattern by user", req.body);
 
   const {
-    email,
     name,
     configuredPhases,
     blinkEnabled,
@@ -180,14 +176,14 @@ exports.addPatternByUserHandler = catchAsync(async (req, res) => {
   } = req.body;
 
   // Ensure the user exists
-  const user = await UserPhase.findOne({ email });
+  const user = await UserPhase.findOne({ email: req.user.email });
   if (!user) {
     return res.status(404).json({ message: "User not found!" });
   }
 
   // Ensure no duplicate pattern name
   const existingPattern = await UserPattern.findOne({
-    email,
+    email: req.user.email,
     "patterns.name": name,
   });
 
@@ -216,7 +212,7 @@ exports.addPatternByUserHandler = catchAsync(async (req, res) => {
 
   // Add the pattern to the database
   await UserPattern.findOneAndUpdate(
-    { email },
+    { email: req.user.email },
     { $push: { patterns: pattern } },
     { upsert: true }
   );
@@ -228,10 +224,9 @@ exports.addPatternByUserHandler = catchAsync(async (req, res) => {
 
 exports.getAllPatternsByUserHandler = catchAsync(async (req, res, next) => {
   console.log("Getting all patterns by user", req.params);
-  const { email } = req.params;
 
   // Find user pattern by email
-  const userPatterns = await UserPattern.findOne({ email });
+  const userPatterns = await UserPattern.findOne({ email: req.user.email });
 
   if (!userPatterns) {
     return res.status(404).json({ message: "No pattern found for this user" });
@@ -263,10 +258,10 @@ exports.getAllPatternsByUserHandler = catchAsync(async (req, res, next) => {
 
 exports.deletePatternByUserHandler = catchAsync(async (req, res) => {
   console.log("Deleting pattern by user", req.params);
-  const { patternName, email } = req.params;
+  const { patternName } = req.params;
 
   const updatedUser = await UserPattern.findOneAndUpdate(
-    { email },
+    { email: req.user.email },
     { $pull: { patterns: { name: patternName } } },
     { new: true }
   );
@@ -282,11 +277,11 @@ exports.deletePatternByUserHandler = catchAsync(async (req, res) => {
 
 exports.editPatternByUserHandler = catchAsync(async (req, res) => {
   console.log("Editing pattern by user", req.params, req.body);
-  const { patternName, email } = req.params;
+  const { patternName } = req.params;
   const { configuredPhases } = req.body;
 
   const patternToUpdate = await UserPattern.findOneAndUpdate(
-    { email, "patterns.name": patternName },
+    { email: req.user.email, "patterns.name": patternName },
     {
       $set: {
         "patterns.$.configuredPhases": configuredPhases,
@@ -309,11 +304,11 @@ exports.editPatternByUserHandler = catchAsync(async (req, res) => {
 
 exports.addPlanByUserHandler = catchAsync(async (req, res) => {
   // console.log("Adding or updating plan by user", req.body.schedule);
-  const { id, name, email, schedule, dayType, customDate } = req.body;
+  const { id, name, schedule, dayType, customDate } = req.body;
 
-  let userPlan = await UserPlan.findOne({ email });
+  let userPlan = await UserPlan.findOne({ email: req.user.email });
   if (!userPlan) {
-    userPlan = new UserPlan({ email, plans: [] });
+    userPlan = new UserPlan({ email: req.user.email, plans: [] });
   }
 
   const existingPlanIndex = userPlan.plans.findIndex(
@@ -349,10 +344,10 @@ exports.addPlanByUserHandler = catchAsync(async (req, res) => {
 exports.updatePlanByUserHandler = catchAsync(async (req, res) => {
   console.log("Newly updating plan by user", req.body.data);
 
-  const { id, name, email, data, dayType, customDate } = req.body;
+  const { id, name, data, dayType, customDate } = req.body;
 
   // Create all the pattern
-  const user = await UserPhase.findOne({ email });
+  const user = await UserPhase.findOne({ email: req.user.email });
   if (!user) {
     return res.status(404).json({ message: "User not found!" });
   }
@@ -390,7 +385,7 @@ exports.updatePlanByUserHandler = catchAsync(async (req, res) => {
 
     // Add the pattern to the database
     await UserPattern.findOneAndUpdate(
-      { email },
+      { email: req.user.email },
       { $push: { patterns: newPattern } },
       { upsert: true }
     );
@@ -445,10 +440,10 @@ exports.updatePlanByUserHandler = catchAsync(async (req, res) => {
   // Create the new schedule
   const newSchedule = generateSchedule(data);
 
-  let userPlan = await UserPlan.findOne({ email });
+  let userPlan = await UserPlan.findOne({ email: req.user.email });
 
   if (!userPlan) {
-    userPlan = new UserPlan({ email, plans: [] });
+    userPlan = new UserPlan({ email: req.user.email, plans: [] });
   }
 
   const existingPlanIndex = userPlan.plans.findIndex(
@@ -484,8 +479,7 @@ exports.updatePlanByUserHandler = catchAsync(async (req, res) => {
 exports.getAllPlansByUserHandler = catchAsync(async (req, res, next) => {
   console.log("Getting all plans by user", req.params);
 
-  const { email } = req.params;
-  const userPlan = await UserPlan.findOne({ email });
+  const userPlan = await UserPlan.findOne({ email: req.user.email });
 
   if (!userPlan) {
     return res.status(404).json({
@@ -504,9 +498,9 @@ exports.getAllPlansByUserHandler = catchAsync(async (req, res, next) => {
 
 exports.deletePlanByUserHandler = catchAsync(async (req, res) => {
   console.log("Deleting plan by user", req.params);
-  const { planId, email } = req.params;
+  const { planId } = req.params;
 
-  const userPlan = await UserPlan.findOne({ email });
+  const userPlan = await UserPlan.findOne({ email: req.user.email });
 
   const planIndex = userPlan.plans.findIndex((plan) => plan.id === planId);
 
@@ -528,9 +522,11 @@ exports.deletePlanByUserHandler = catchAsync(async (req, res) => {
 
 exports.confirmPasswordHandler = catchAsync(async (req, res) => {
   console.log("Confirming password by user", req.body);
-  const { email, password } = req.body;
+  const { password } = req.body;
 
-  const user = await User.findOne({ email }).select("+password");
+  const user = await User.findOne({ email: req.user.email }).select(
+    "+password"
+  );
 
   if (!user) {
     return res.status(404).json({

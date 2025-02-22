@@ -5,6 +5,7 @@ const rateLimit = require("express-rate-limit");
 const helmet = require("helmet");
 const xss = require("xss-clean");
 const path = require("path");
+const csurf = require("csurf");
 
 // RouteHandler
 const authRouter = require("./routes/authRoutes");
@@ -18,7 +19,25 @@ const GlobalErrorHandler = require("./controllers/errorController");
 // App Initialization
 const app = express();
 
-app.use(cors());
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://traffic-app.quadrumtechnologies.com",
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 // Set security HTTP header
 app.use(helmet());
@@ -32,6 +51,7 @@ const limiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   message: "Too many request from this IP, please try again in an hour!",
 });
+// app.use(csurf({ cookie: true }));
 
 app.use("/api", limiter);
 
@@ -48,8 +68,8 @@ app.get("/", (req, res) => {
 
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/auth/admin", adminAuthRouter);
-app.use("/api/v1", appRouter);
 app.use("/api/v1/admin", adminAppRouter);
+app.use("/api/v1", appRouter);
 
 // Any request that makes it to this part has lost it's way
 app.all("*", (req, res, next) => {

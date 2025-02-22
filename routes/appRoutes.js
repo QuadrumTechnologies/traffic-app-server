@@ -1,20 +1,23 @@
 const express = require("express");
 const router = express.Router();
 const appController = require("../controllers/appController");
+const { authenticateUser } = require("../controllers/authController");
+
+router.use(authenticateUser);
 
 router.post("/devices", appController.addDeviceByUserHandler);
-router.get("/devices/:email", appController.getAllDeviceByUserHandler);
-router.get("/devices/:deviceId/:userEmail", appController.getDeviceDetailById);
+router.get("/devices", appController.getAllDeviceByUserHandler);
+router.get("/devices/:deviceId/:email", appController.getDeviceDetailById);
 
 router.post("/phases", appController.addPhaseByUserHandler);
-router.get("/phases/:email", appController.getAllPhaseByUserHandler);
+router.get("/phases", appController.getAllPhaseByUserHandler);
 router.delete(
   "/phases/:phaseId/:email",
   appController.deletePhaseByUserHandler
 );
 
 router.post("/patterns", appController.addPatternByUserHandler);
-router.get("/patterns/:email", appController.getAllPatternsByUserHandler);
+router.get("/patterns", appController.getAllPatternsByUserHandler);
 router.delete(
   "/patterns/:patternName/:email",
   appController.deletePatternByUserHandler
@@ -26,7 +29,7 @@ router.put(
 
 router.post("/plans", appController.addPlanByUserHandler);
 router.put("/plans", appController.updatePlanByUserHandler);
-router.get("/plans/:email", appController.getAllPlansByUserHandler);
+router.get("/plans", appController.getAllPlansByUserHandler);
 router.delete("/plans/:planId/:email", appController.deletePlanByUserHandler);
 
 router.post("/confirm-password", appController.confirmPasswordHandler);
