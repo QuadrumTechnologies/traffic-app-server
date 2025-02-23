@@ -21,7 +21,7 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://traffic-app.quadrumtechnologies.com",
+  "https://traffic-signal.quadrumtechnologies.com",
 ];
 
 app.use(
