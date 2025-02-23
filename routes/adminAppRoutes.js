@@ -18,6 +18,7 @@ router.patch(
   "/devices/:deviceId/availability",
   adminAppController.restoreUserDeviceByAdminHandler
 );
+
 router.patch(
   "/devices/:deviceId/recall",
   adminAppController.recallUserDeviceByAdminHandler
