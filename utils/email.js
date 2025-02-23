@@ -8,6 +8,7 @@ const {
   generateDeviceRestoredHTML,
   generateDeviceRecalledHTML,
   generateDeviceUnrecalledHTML,
+  generateDeviceAssignmentHTML,
 } = require("./emailTemplates");
 
 class Email {
@@ -101,6 +102,12 @@ class Email {
     await this.send(
       generateDeviceUnrecalledHTML(this.firstName, deviceId),
       "Device Unrecalled"
+    );
+  }
+  async sendDeviceAssignmentNotification({ deviceId }) {
+    await this.send(
+      generateDeviceAssignmentHTML(this.firstName, deviceId),
+      "Device Assignment"
     );
   }
 }

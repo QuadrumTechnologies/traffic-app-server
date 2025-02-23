@@ -410,7 +410,6 @@ exports.generateDeviceUnrecalledHTML = function (firstName, deviceId) {
                         }
                         .content {
                             padding: 20px;
-                            text-align: center;
                         }
                         .button {
                             display: inline-block;
@@ -440,4 +439,64 @@ exports.generateDeviceUnrecalledHTML = function (firstName, deviceId) {
                 </body>
                 </html>
               `;
+};
+
+exports.generateDeviceAssignmentHTML = function (firstName, deviceId) {
+  return `
+                  <!DOCTYPE html>
+                  <html>
+                  <head>
+                      <title>Device Assigned</title>
+                      <style>
+                          body {
+                              font-family: Arial, sans-serif;
+                              background-color: #f4f4f4;
+                              margin: 0;
+                              padding: 0;
+                              color: #333;
+                          }
+                          .container {
+                              background-color: #fff;
+                              margin: 50px auto;
+                              padding: 20px;
+                              border-radius: 10px;
+                              box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                              max-width: 600px;
+                          }
+                          .header {
+                              text-align: center;
+                              border-bottom: 1px solid #ddd;
+                              padding-bottom: 20px;
+                          }
+                          .content {
+                              padding: 20px;
+                          }
+                          .button {
+                              display: inline-block;
+                              padding: 10px 20px;
+                              margin: 20px 0;
+                              background-color: #007bff;
+                              color: #fff;
+                              text-decoration: none;
+                              border-radius: 5px;
+                              font-weight: bold;
+                          }
+                      </style>
+                  </head>
+                  <body>
+                      <div class="container">
+                          <div class="header">
+                              <h2>Device Assigned</h2>
+                          </div>
+                          <div class="content">
+                              <h3>Hello ${firstName},</h3>
+                              <p>We are pleased to inform you that a device has been assigned to you.</p>
+                              <p><strong>Device ID:</strong> ${deviceId}</p>
+                              <p>If you have any questions, feel free to contact our support team.</p>
+                              <p><strong>Best Regards,</strong><br>Support Team</p>
+                          </div>
+                      </div>
+                  </body>
+                  </html>
+                `;
 };

@@ -51,6 +51,18 @@ exports.addDeviceByAdminHandler = catchAsync(async (req, res, next) => {
   }
   const department = adminEmail.slice(0, adminEmail.indexOf("@"));
 
+  if (deviceStatus.value === "purchased" && (!ownerEmail || !purchasedDate)) {
+    return res.status(400).json({
+      message:
+        "Owner email and purchase date are required for purchased devices.",
+    });
+  }
+
+  const user = await User.findOne({ email: ownerEmail });
+  if (!user) {
+    return res.status(404).json({ message: "Owner not found." });
+  }
+
   const newDevice = await AdminDevice.create({
     deviceId,
     deviceType,
@@ -243,5 +255,42 @@ exports.recallUserDeviceByAdminHandler = catchAsync(async (req, res) => {
   res.status(200).json({
     message: "Device has been recalled and will be deleted in 7 days.",
     data: device,
+  });
+});
+
+exports.assignDeviceByAdminHandler = catchAsync(async (req, res, next) => {
+  console.log("Assigning device", req.body);
+  const { deviceId, deviceStatus, ownerEmail, purchasedDate } = req.body;
+
+  if (!deviceId || !deviceStatus || !ownerEmail || !purchasedDate) {
+    return res.status(400).json({ message: "All fields are required." });
+  }
+
+  const unassignedDevice = await AdminDevice.findOne({ deviceId: deviceId });
+
+  if (!unassignedDevice) {
+    return res.status(400).json({ message: "Device does not exists." });
+  }
+
+  const user = await User.findOne({ email: ownerEmail });
+  if (!user) {
+    return res.status(404).json({ message: "Email not found." });
+  }
+
+  unassignedDevice.deviceStatus = {
+    status: deviceStatus,
+    ownerEmail,
+    purchaseDate: purchasedDate,
+  };
+  unassignedDevice.save();
+
+  const email = new Email(user);
+  await email.sendDeviceAssignmentNotification({
+    deviceId: deviceId,
+  });
+
+  res.status(201).json({
+    message: "Device assigned successfully",
+    data: unassignedDevice,
   });
 });

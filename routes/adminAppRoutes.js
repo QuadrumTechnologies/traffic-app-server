@@ -23,6 +23,10 @@ router.patch(
   "/devices/:deviceId/recall",
   adminAppController.recallUserDeviceByAdminHandler
 );
+router.patch(
+  "/devices/:deviceId/assign",
+  adminAppController.assignDeviceByAdminHandler
+);
 
 router.get(
   "/devices/:deviceDepartment",
