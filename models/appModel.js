@@ -32,7 +32,9 @@ const userDeviceSchema = new Schema({
   },
   allowAdminSupport: { type: Boolean, default: false },
   isTrash: { type: Boolean, default: false },
-  deletedAt: { type: Date, default: null },
+  deleteAt: { type: Date, default: null },
+  isRecalled: { type: Boolean, default: false },
+  recallAt: { type: Date, default: null },
 });
 
 const userPhaseSchema = new Schema({

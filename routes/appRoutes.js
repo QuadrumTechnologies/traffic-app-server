@@ -11,6 +11,10 @@ router.use(authenticateUser);
 
 router.post("/devices", appController.addDeviceByUserHandler);
 router.get("/devices", appController.getAllDeviceByUserHandler);
+router.patch(
+  "/devices/:deviceId/availability",
+  appController.deleteOrRestoreDeviceHandler
+);
 
 router.post("/phases", appController.addPhaseByUserHandler);
 router.get("/phases", appController.getAllPhaseByUserHandler);

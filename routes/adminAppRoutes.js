@@ -10,6 +10,19 @@ router.delete(
   "/devices/:deviceId",
   adminAppController.deleteDeviceByAdminHandler
 );
+router.patch(
+  "/devices/:deviceId/status",
+  adminAppController.updateDeviceStatusByAdminHandler
+);
+router.patch(
+  "/devices/:deviceId/availability",
+  adminAppController.restoreUserDeviceByAdminHandler
+);
+router.patch(
+  "/devices/:deviceId/recall",
+  adminAppController.recallUserDeviceByAdminHandler
+);
+
 router.get(
   "/devices/:deviceDepartment",
   adminAppController.getAllDeviceByAdminHandler

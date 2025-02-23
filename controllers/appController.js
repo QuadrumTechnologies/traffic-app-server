@@ -9,6 +9,7 @@ const {
 } = require("../models/appModel");
 const User = require("../models/userModel");
 const catchAsync = require("../utils/catchAsync");
+const Email = require("../utils/email");
 const { generateSecretKey } = require("../utils/misc");
 
 exports.getDeviceDetailById = catchAsync(async (req, res, next) => {
@@ -82,7 +83,11 @@ exports.addDeviceByUserHandler = catchAsync(async (req, res, next) => {
 
 exports.getAllDeviceByUserHandler = catchAsync(async (req, res, next) => {
   console.log("Getting all devices by user", req.user.email);
-  const devices = await UserDevice.find({ email: req.user.email });
+
+  const devices = await UserDevice.find({
+    email: req.user.email,
+    isTrash: false,
+  });
 
   return res.status(200).json({
     devices,
@@ -621,6 +626,44 @@ exports.updateAllowAdminSupportHandler = catchAsync(async (req, res) => {
 
   res.status(200).json({
     message: "Admin support status updated successfully.",
+    data: device,
+  });
+});
+
+exports.deleteOrRestoreDeviceHandler = catchAsync(async (req, res) => {
+  console.log("Updating device availability", req.params, req.body);
+  const { deviceId } = req.params;
+  const restoreDevice = req.body.restore === true;
+
+  const device = await UserDevice.findOne({ deviceId });
+  if (!device) {
+    return res.status(404).json({ message: "Device not found." });
+  }
+
+  if (restoreDevice) {
+    device.isTrash = false;
+    device.deleteAt = null;
+  } else {
+    device.isTrash = true;
+    device.deleteAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Delete after 30 days
+  }
+
+  await device.save();
+
+  try {
+    const user = await User.findOne({ email: device.email });
+    const email = new Email(user);
+    if (!restoreDevice) {
+      await email.sendDeviceDeletedNotification();
+    }
+  } catch (error) {
+    console.log("Error sending email:", error);
+  }
+
+  res.status(200).json({
+    message: `Device ${
+      restoreDevice ? "restored" : "moved to trash"
+    } successfully.`,
     data: device,
   });
 });

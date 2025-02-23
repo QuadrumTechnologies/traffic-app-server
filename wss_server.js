@@ -2,6 +2,7 @@ const { createServer } = require("https");
 const WebSocket = require("ws");
 const fs = require("fs");
 require("dotenv").config();
+require("./cronJobs");
 
 const app = require("./app");
 const connectToMongoDB = require("./db");

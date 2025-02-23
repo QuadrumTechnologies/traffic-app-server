@@ -4,6 +4,10 @@ const {
   generateEmailVerificationHTML,
   generateResetPasswordHTML,
   generateResetPasswordSuccessHTML,
+  generateDeviceDeletedHTML,
+  generateDeviceRestoredHTML,
+  generateDeviceRecalledHTML,
+  generateDeviceUnrecalledHTML,
 } = require("./emailTemplates");
 
 class Email {
@@ -71,6 +75,32 @@ class Email {
     await this.send(
       generateResetPasswordSuccessHTML(),
       "Account Password Reset Successful"
+    );
+  }
+
+  async sendDeviceDeletedNotification() {
+    await this.send(
+      generateDeviceDeletedHTML(this.firstName),
+      "Device Moved to Trash"
+    );
+  }
+
+  async sendDeviceRestoredNotification() {
+    await this.send(
+      generateDeviceRestoredHTML(this.firstName),
+      "Device Restored"
+    );
+  }
+  async sendDeviceRecallNotification({ deviceId, autodeleteAt }) {
+    await this.send(
+      generateDeviceRecalledHTML(this.firstName, deviceId, autodeleteAt),
+      "Device Recalled"
+    );
+  }
+  async sendDeviceUnRecallNotification({ deviceId }) {
+    await this.send(
+      generateDeviceUnrecalledHTML(this.firstName, deviceId),
+      "Device Unrecalled"
     );
   }
 }
