@@ -259,7 +259,7 @@ exports.recallUserDeviceByAdminHandler = catchAsync(async (req, res) => {
 });
 
 exports.assignDeviceByAdminHandler = catchAsync(async (req, res, next) => {
-  console.log("Assigning device", req.body);
+  console.log("Assigning device to user", req.body);
   const { deviceId, deviceStatus, ownerEmail, purchasedDate } = req.body;
 
   if (!deviceId || !deviceStatus || !ownerEmail || !purchasedDate) {
