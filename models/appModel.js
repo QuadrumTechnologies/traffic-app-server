@@ -30,7 +30,7 @@ const userDeviceSchema = new Schema({
     enum: ["active", "disabled", "recalled", "deleted"],
     default: "active",
   },
-  allowAdminSupport: { type: Boolean, default: false },
+  allowAdminSupport: { type: Boolean, default: true },
   isTrash: { type: Boolean, default: false },
   deleteAt: { type: Date, default: null },
   isRecalled: { type: Boolean, default: false },

@@ -58,11 +58,6 @@ exports.addDeviceByAdminHandler = catchAsync(async (req, res, next) => {
     });
   }
 
-  const user = await User.findOne({ email: ownerEmail });
-  if (!user) {
-    return res.status(404).json({ message: "Owner not found." });
-  }
-
   const newDevice = await AdminDevice.create({
     deviceId,
     deviceType,
