@@ -10,7 +10,7 @@ const userDeviceSchema = new Schema({
   secretKey: {
     type: String,
     required: [true, "Device Secret Key is required"],
-    select: false,
+    // select: false,
   },
   deviceType: {
     type: String,
