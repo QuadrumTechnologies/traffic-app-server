@@ -20,9 +20,15 @@ exports.infoDataRequestHandler = catchAsync(async (ws, clients, payload) => {
 
 exports.infoDataHandler = catchAsync(async (ws, clients, payload) => {
   console.log("Received info data from Hardware", payload);
-  const { DeviceID, Rtc, Plan, Period } = payload || {};
+  const {
+    DeviceID,
+    Rtc,
+    Plan,
+    Period,
+    CommunicationFrequency,
+    CommunicationChannel,
+  } = payload || {};
 
-  // Set default values for nested properties in each direction
   const North = {
     Bat: payload?.North?.Bat ?? null,
     Temp: payload?.North?.Temp ?? null,
@@ -77,6 +83,10 @@ exports.infoDataHandler = catchAsync(async (ws, clients, payload) => {
     deviceInfo.Plan = Plan;
     deviceInfo.Period = Period;
     deviceInfo.JunctionId = payload?.JunctionId;
+    deviceInfo.CommunicationFrequency =
+      CommunicationFrequency || deviceInfo.CommunicationFrequency;
+    deviceInfo.CommunicationChannel =
+      CommunicationChannel || deviceInfo.CommunicationChannel;
     await deviceInfo.save();
   } else {
     deviceInfo = await UserDeviceInfo.create({
@@ -89,6 +99,8 @@ exports.infoDataHandler = catchAsync(async (ws, clients, payload) => {
       Plan,
       Period,
       JunctionId: payload?.JunctionId,
+      CommunicationFrequency: CommunicationFrequency || "",
+      CommunicationChannel: CommunicationChannel || "",
     });
   }
 

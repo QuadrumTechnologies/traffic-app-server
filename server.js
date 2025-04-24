@@ -148,7 +148,7 @@ connectToMongoDB()
   .then(() => {
     console.log("Connection to MongoDB is successful.");
     httpServer.listen(PORT, () => {
-      console.log("Secure websocket server running on port ->", PORT);
+      console.log("Websocket server running on port ->", PORT);
       initWebSocketServer();
     });
   })

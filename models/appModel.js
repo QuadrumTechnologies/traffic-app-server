@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-// Define schema for USer
+// Define schema for UserDevice
 const userDeviceSchema = new Schema({
   deviceId: {
     type: String,
@@ -10,7 +10,6 @@ const userDeviceSchema = new Schema({
   secretKey: {
     type: String,
     required: [true, "Device Secret Key is required"],
-    // select: false,
   },
   deviceType: {
     type: String,
@@ -19,7 +18,7 @@ const userDeviceSchema = new Schema({
   },
   email: {
     type: String,
-    required: [true, "Email of admin is required "],
+    required: [true, "Email of admin is required"],
   },
   createdAt: {
     type: Date,
@@ -119,8 +118,20 @@ const userDeviceStateSchema = new Schema({
     type: Boolean,
     required: true,
   },
-  Restart: {
+  Reboot: {
     type: Boolean,
+    required: true,
+  },
+  SignalLevel: {
+    type: Number,
+    required: true,
+  },
+  ErrorFlash: {
+    type: Boolean,
+    required: true,
+  },
+  SignalConfig: {
+    type: String,
     required: true,
   },
 });
@@ -147,6 +158,14 @@ const userDeviceInfoSchema = new Schema({
   Plan: { type: String, required: true },
   Period: { type: String, required: true },
   JunctionId: { type: String, required: true },
+  CommunicationFrequency: {
+    type: String,
+    required: true,
+  },
+  CommunicationChannel: {
+    type: String,
+    required: true,
+  },
 });
 
 // Create models
@@ -158,7 +177,6 @@ const UserDeviceState = mongoose.model(
   "UserDeviceState",
   userDeviceStateSchema
 );
-
 const UserDeviceInfo = mongoose.model("UserDeviceInfo", userDeviceInfoSchema);
 
 module.exports = {

@@ -20,7 +20,18 @@ exports.stateDataRequestHandler = catchAsync(async (ws, clients, payload) => {
 exports.deviceStateHandler = catchAsync(async (ws, clients, payload) => {
   console.log("Received State data from Hardware", payload);
 
-  const { DeviceID, Auto, Power, Next, Hold, Reset, Restart } = payload || {};
+  const {
+    DeviceID,
+    Auto,
+    Power,
+    Next,
+    Hold,
+    Reset,
+    Reboot,
+    SignalLevel,
+    ErrorFlash,
+    SignalConfig,
+  } = payload || {};
 
   if (!DeviceID) {
     return;
@@ -29,13 +40,17 @@ exports.deviceStateHandler = catchAsync(async (ws, clients, payload) => {
   let deviceState = await UserDeviceState.findOne({ DeviceID });
 
   if (deviceState) {
-    (deviceState.Auto = Auto === "true" ? true : false),
-      (deviceState.Power = Power === "true" ? true : false),
-      (deviceState.Next = Next === "true" ? true : false),
-      (deviceState.Hold = Hold === "true" ? true : false),
-      (deviceState.Reset = Reset === "true" ? true : false),
-      (deviceState.Restart = Restart === "true" ? true : false),
-      await deviceState.save();
+    deviceState.Auto = Auto === "true" ? true : false;
+    deviceState.Power = Power === "true" ? true : false;
+    deviceState.Next = Next === "true" ? true : false;
+    deviceState.Hold = Hold === "true" ? true : false;
+    deviceState.Reset = Reset === "true" ? true : false;
+    deviceState.Reboot = Reboot === "true" ? true : false;
+    deviceState.SignalLevel =
+      SignalLevel !== undefined ? Number(SignalLevel) : deviceState.SignalLevel;
+    deviceState.ErrorFlash = ErrorFlash === "true" ? true : false;
+    deviceState.SignalConfig = SignalConfig || deviceState.SignalConfig;
+    await deviceState.save();
   } else {
     deviceState = await UserDeviceState.create({
       DeviceID,
@@ -44,9 +59,13 @@ exports.deviceStateHandler = catchAsync(async (ws, clients, payload) => {
       Next: Next === "true" ? true : false,
       Hold: Hold === "true" ? true : false,
       Reset: Reset === "true" ? true : false,
-      Restart: Restart === "true" ? true : false,
+      Reboot: Reboot === "true" ? true : false,
+      SignalLevel: SignalLevel !== undefined ? Number(SignalLevel) : 20,
+      ErrorFlash: ErrorFlash === "true" ? true : false,
+      SignalConfig: SignalConfig || "",
     });
   }
+
   return clients.forEach((client) => {
     if (client.clientType === payload.DeviceID) return;
     client.send(
