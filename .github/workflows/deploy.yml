@@ -21,9 +21,11 @@ jobs:
         run: |
           # Ensure the .ssh directory exists
           mkdir -p ~/.ssh
+
           # Write the SSH private key to a file
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/private_key.pem
           chmod 600 ~/.ssh/private_key.pem
+
           # Add the EC2 instance to known_hosts to avoid interactive prompts
           ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
 
@@ -36,9 +38,8 @@ jobs:
             # Navigate to your project directory
             cd /home/ubuntu/traffic-app-server
 
-            # Ensure the repository is clean and matches origin/main
-            git fetch origin
-            git reset --hard origin/main
+            # Pull the latest code from the repository
+            git pull origin main
 
             # Install dependencies
             npm install
