@@ -1,6 +1,8 @@
 const { UserDeviceState } = require("../models/appModel");
 const catchAsync = require("../utils/catchAsync");
 
+// This function handles the intersection control request from the client
+// It updates the device state based on the action received in the payload
 exports.intersectionControlRequestHandler = catchAsync(
   async (ws, clients, payload) => {
     console.log("Received intersection request data from Client", payload);
