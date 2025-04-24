@@ -30,10 +30,10 @@ const PORT = 443;
 
 const options = {
   key: fs.readFileSync(
-    "/etc/letsencrypt/live/traffic.quadrumtechnologies.com/privkey.pem"
+    "/etc/letsencrypt/live/traffic-api.quadrumtechnologies.com/privkey.pem"
   ),
   cert: fs.readFileSync(
-    "/etc/letsencrypt/live/traffic.quadrumtechnologies.com/fullchain.pem"
+    "/etc/letsencrypt/live/traffic-api.quadrumtechnologies.com/fullchain.pem"
   ),
 };
 
