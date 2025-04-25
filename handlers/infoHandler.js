@@ -83,6 +83,7 @@ exports.infoDataHandler = catchAsync(async (ws, clients, payload) => {
     deviceInfo.Plan = Plan;
     deviceInfo.Period = Period;
     deviceInfo.JunctionId = payload?.JunctionId;
+    deviceInfo.JunctionPassword = payload?.JunctionPassword;
     deviceInfo.CommunicationFrequency =
       CommunicationFrequency || deviceInfo.CommunicationFrequency;
     deviceInfo.CommunicationChannel =
@@ -99,6 +100,7 @@ exports.infoDataHandler = catchAsync(async (ws, clients, payload) => {
       Plan,
       Period,
       JunctionId: payload?.JunctionId,
+      JunctionPassword: payload?.JunctionPassword,
       CommunicationFrequency: CommunicationFrequency || "",
       CommunicationChannel: CommunicationChannel || "",
     });

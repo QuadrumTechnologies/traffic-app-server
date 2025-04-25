@@ -158,6 +158,7 @@ const userDeviceInfoSchema = new Schema({
   Plan: { type: String, required: true },
   Period: { type: String, required: true },
   JunctionId: { type: String, required: true },
+  JunctionPassword: { type: String, required: true },
   CommunicationFrequency: {
     type: String,
     required: true,
