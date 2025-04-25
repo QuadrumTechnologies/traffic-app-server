@@ -19,31 +19,27 @@ jobs:
           HOST: ${{ secrets.HOST }}
           USER: ${{ secrets.USER }}
         run: |
-          # Ensure the .ssh directory exists
-          mkdir -p ~/.ssh
-
-          # Write the SSH private key to a file
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/private_key.pem
-          chmod 600 ~/.ssh/private_key.pem
-
-          # Add the EC2 instance to known_hosts to avoid interactive prompts
-          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
+          set -x
+          mkdir -p ~/.ssh || { echo "mkdir failed"; exit 1; }
+          if [ -z "$SSH_PRIVATE_KEY" ]; then echo "SSH_PRIVATE_KEY is empty"; exit 1; fi
+          if [ -z "$HOST" ]; then echo "HOST is empty"; exit 1; fi
+          if [ -z "$USER" ]; then echo "USER is empty"; exit 1; fi
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/private_key.pem || { echo "echo failed"; exit 1; }
+          chmod 600 ~/.ssh/private_key.pem || { echo "chmod failed"; exit 1; }
+          ls -l ~/.ssh/private_key.pem
+          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts || { echo "ssh-keyscan failed"; exit 1; }
 
       - name: Deploy to EC2
         env:
           HOST: ${{ secrets.HOST }}
           USER: ${{ secrets.USER }}
         run: |
+          set -x
           ssh -i ~/.ssh/private_key.pem $USER@$HOST << 'EOF'
-            # Navigate to your project directory
-            cd /home/ubuntu/traffic-app-server
-
-            # Pull the latest code from the repository
-            git pull origin main
-
-            # Install dependencies
-            npm install
-
-            # Restart the application with PM2
-            pm2 restart traffic-app-v1 || pm2 start wss_server.js --name traffic-app-v1
+            cd /home/ubuntu/traffic-app-server || { echo "Directory not found"; exit 1; }
+            git fetch origin || { echo "git fetch failed"; exit 1; }
+            git reset --hard origin/main || { echo "git reset failed"; exit 1; }
+            git status
+            npm install || { echo "npm install failed"; exit 1; }
+            pm2 restart traffic-app-v1 || pm2 start wss_server.js --name traffic-app-v1 || { echo "pm2 failed"; exit 1; }
           EOF
