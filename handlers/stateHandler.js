@@ -4,7 +4,7 @@ const catchAsync = require("../utils/catchAsync");
 exports.stateDataRequestHandler = catchAsync(async (ws, clients, payload) => {
   console.log("Received state request data from Client", payload);
   return clients.forEach((client) => {
-    // if (client.clientType !== payload.DeviceID) return;
+    if (client.clientType !== payload.DeviceID) return;
     client.send(
       JSON.stringify({
         Event: "ctrl",
