@@ -2,7 +2,7 @@ const { UserDeviceState } = require("../models/appModel");
 const catchAsync = require("../utils/catchAsync");
 
 exports.stateDataRequestHandler = catchAsync(async (ws, clients, payload) => {
-  console.log("Received state request data from Client", payload);
+  // console.log("Received state request data from Client", payload);
   return clients.forEach((client) => {
     if (client.clientType !== payload.DeviceID) return;
     client.send(
@@ -18,7 +18,7 @@ exports.stateDataRequestHandler = catchAsync(async (ws, clients, payload) => {
 });
 
 exports.deviceStateHandler = catchAsync(async (ws, clients, payload) => {
-  console.log("Received State data from Hardware", payload);
+  // console.log("Received State data from Hardware", payload);
 
   const {
     DeviceID,

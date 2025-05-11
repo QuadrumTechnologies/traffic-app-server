@@ -5,7 +5,7 @@ const catchAsync = require("../utils/catchAsync");
 // It updates the device state based on the action received in the payload
 exports.intersectionControlRequestHandler = catchAsync(
   async (ws, clients, payload) => {
-    console.log("Received intersection request data from Client", payload);
+    // console.log("Received intersection request data from Client", payload);
 
     const deviceState = await UserDeviceState.findOne({
       DeviceID: payload.DeviceID,

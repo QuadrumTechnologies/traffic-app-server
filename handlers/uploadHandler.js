@@ -22,7 +22,7 @@ exports.numToDay = {
 };
 
 exports.uploadRequestHandler = catchAsync(async (ws, clients, payload) => {
-  console.log("Received upload request data from Client", payload);
+  // console.log("Received upload request data from Client", payload);
 
   // Find the user's patterns
   const userPatterns = await UserPattern.findOne({ email: payload.email });
