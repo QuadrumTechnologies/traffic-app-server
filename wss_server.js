@@ -88,7 +88,7 @@ function initWebSocketServer() {
 
       // Hardware logic
       if (data?.Event === "data") {
-        console.log(`${data?.Type} data received from hardware`);
+        // console.log(`${data?.Type} data received from hardware`);
         switch (data?.Type) {
           case "identify":
             console.log(`Hardware identified as:`, data.Param.DeviceID);
