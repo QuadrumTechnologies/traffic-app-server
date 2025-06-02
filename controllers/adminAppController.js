@@ -84,24 +84,28 @@ exports.getAllDeviceByAdminHandler = catchAsync(async (req, res, next) => {
   // Fetch all admin devices in the specified department
   const adminDevices = await AdminDevice.find({
     deviceDepartment: deviceDepartment,
-  });
+  }).lean();
 
-  // Fetch corresponding user devices by matching deviceId
-  const devicesWithUserData = await Promise.all(
+  // Fetch corresponding user devices and device info by matching deviceId
+  const devicesWithUserDataAndInfo = await Promise.all(
     adminDevices.map(async (adminDevice) => {
       const userDevice = await UserDevice.findOne({
         deviceId: adminDevice.deviceId,
-      });
+      }).lean();
+      const info = await UserDeviceInfo.findOne({
+        DeviceID: adminDevice.deviceId,
+      }).lean();
       return {
-        ...adminDevice.toObject(),
-        userDevice, // Add user device data to admin device object
+        ...adminDevice,
+        userDevice: userDevice || null,
+        info: info || null,
       };
     })
   );
 
   return res.status(200).json({
     message: "Devices fetched successfully.",
-    devices: devicesWithUserData,
+    devices: devicesWithUserDataAndInfo,
   });
 });
 
