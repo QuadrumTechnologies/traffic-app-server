@@ -84,13 +84,27 @@ exports.addDeviceByUserHandler = catchAsync(async (req, res, next) => {
 exports.getAllDeviceByUserHandler = catchAsync(async (req, res, next) => {
   console.log("Getting all devices by user", req.user.email);
 
+  // Fetch devices for the user
   const devices = await UserDevice.find({
     email: req.user.email,
     isTrash: false,
-  });
+  }).lean();
+
+  // Fetch device info for each device
+  const devicesWithInfo = await Promise.all(
+    devices.map(async (device) => {
+      const info = await UserDeviceInfo.findOne({
+        DeviceID: device.deviceId,
+      }).lean();
+      return {
+        ...device,
+        info: info || null,
+      };
+    })
+  );
 
   return res.status(200).json({
-    devices,
+    devices: devicesWithInfo,
   });
 });
 
@@ -163,6 +177,34 @@ exports.deletePhaseByUserHandler = catchAsync(async (req, res) => {
   }
 
   res.status(204).json({ message: "Phase successfully deleted." });
+});
+
+exports.deleteAllPhasesByUserHandler = catchAsync(async (req, res) => {
+  console.log("Deleting all phases for user", req.params.email);
+  const { email } = req.params;
+
+  // Ensure the authenticated user matches the email in the request
+  if (email !== req.user.email) {
+    return res.status(403).json({
+      message: "You are not authorized to delete phases for this user.",
+    });
+  }
+
+  const updatedUser = await UserPhase.findOneAndUpdate(
+    { email },
+    { $set: { phases: [] } },
+    { new: true }
+  );
+
+  if (!updatedUser) {
+    return res.status(404).json({
+      message: "No phases found for this user.",
+    });
+  }
+
+  res.status(200).json({
+    message: "All phases successfully deleted.",
+  });
 });
 
 exports.addPatternByUserHandler = catchAsync(async (req, res) => {

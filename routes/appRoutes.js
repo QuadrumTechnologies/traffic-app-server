@@ -22,6 +22,7 @@ router.delete(
   "/phases/:phaseId/:email",
   appController.deletePhaseByUserHandler
 );
+router.delete("/phases/all/:email", appController.deleteAllPhasesByUserHandler);
 
 router.post("/patterns", appController.addPatternByUserHandler);
 router.get("/patterns", appController.getAllPatternsByUserHandler);
