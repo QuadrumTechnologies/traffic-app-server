@@ -321,6 +321,34 @@ exports.deletePatternByUserHandler = catchAsync(async (req, res) => {
   res.status(204).json({ message: "Pattern successfully deleted." });
 });
 
+exports.deleteAllPatternsByUserHandler = catchAsync(async (req, res) => {
+  console.log("Deleting all patterns for user", req.params.email);
+  const { email } = req.params;
+
+  // Ensure the authenticated user matches the email in the request
+  if (email !== req.user.email) {
+    return res.status(403).json({
+      message: "You are not authorized to delete patterns for this user.",
+    });
+  }
+
+  const updatedUser = await UserPattern.findOneAndUpdate(
+    { email },
+    { $set: { patterns: [] } },
+    { new: true }
+  );
+
+  if (!updatedUser) {
+    return res.status(404).json({
+      message: "No patterns found for this user.",
+    });
+  }
+
+  res.status(200).json({
+    message: "All patterns successfully deleted.",
+  });
+});
+
 exports.editPatternByUserHandler = catchAsync(async (req, res) => {
   console.log("Editing pattern by user", req.params, req.body);
   const { patternName } = req.params;
@@ -563,6 +591,34 @@ exports.deletePlanByUserHandler = catchAsync(async (req, res) => {
 
   res.status(200).json({
     message: `Plan deleted successfully!`,
+  });
+});
+
+exports.deleteAllPlansByUserHandler = catchAsync(async (req, res) => {
+  console.log("Deleting all plans for user", req.params.email);
+  const { email } = req.params;
+
+  // Ensure the authenticated user matches the email in the request
+  if (email !== req.user.email) {
+    return res.status(403).json({
+      message: "You are not authorized to delete plans for this user.",
+    });
+  }
+
+  const updatedUser = await UserPlan.findOneAndUpdate(
+    { email },
+    { $set: { plans: [] } },
+    { new: true }
+  );
+
+  if (!updatedUser) {
+    return res.status(404).json({
+      message: "No plans found for this user.",
+    });
+  }
+
+  res.status(200).json({
+    message: "All plans successfully deleted.",
   });
 });
 

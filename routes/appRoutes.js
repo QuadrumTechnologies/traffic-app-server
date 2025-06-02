@@ -30,6 +30,10 @@ router.delete(
   "/patterns/:patternName/:email",
   appController.deletePatternByUserHandler
 );
+router.delete(
+  "/patterns/all/:email",
+  appController.deleteAllPatternsByUserHandler
+);
 router.put(
   "/patterns/:patternName/:email",
   appController.editPatternByUserHandler
@@ -39,6 +43,7 @@ router.post("/plans", appController.addPlanByUserHandler);
 router.put("/plans", appController.updatePlanByUserHandler);
 router.get("/plans", appController.getAllPlansByUserHandler);
 router.delete("/plans/:planId/:email", appController.deletePlanByUserHandler);
+router.delete("/plans/all/:email", appController.deleteAllPlansByUserHandler);
 
 router.post("/confirm-password", appController.confirmPasswordHandler);
 
