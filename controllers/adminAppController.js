@@ -1,6 +1,6 @@
 const { AdminDevice } = require("../models/adminAppModel");
 const AdminUser = require("../models/adminUserModel");
-const { UserDevice } = require("../models/appModel");
+const { UserDevice, UserDeviceInfo } = require("../models/appModel");
 const User = require("../models/userModel");
 const catchAsync = require("../utils/catchAsync");
 const Email = require("../utils/email");
