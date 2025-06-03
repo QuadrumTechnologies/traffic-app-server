@@ -1,16 +1,32 @@
 const { AdminDevice } = require("../models/adminAppModel");
 const AdminUser = require("../models/adminUserModel");
 const { UserDevice, UserDeviceInfo } = require("../models/appModel");
+const { AuditLog } = require("../models/auditModel");
 const User = require("../models/userModel");
 const catchAsync = require("../utils/catchAsync");
 const Email = require("../utils/email");
 
 exports.confirmAdminPasswordHandler = catchAsync(async (req, res) => {
-  const { email, password } = req.body;
+  const { password, reason } = req.body;
 
-  const user = await AdminUser.findOne({ email }).select("+password");
+  if (!reason) {
+    return res.status(400).json({
+      message: "Reason for password confirmation is required.",
+    });
+  }
+
+  const user = await AdminUser.findOne({ email: req.user.email }).select(
+    "+password"
+  );
 
   if (!user) {
+    await AuditLog.create({
+      userType: "admin",
+      email,
+      endpoint: "/admin/confirm-password",
+      reason,
+      status: "failure",
+    });
     return res.status(404).json({
       message: "User not found.",
     });
@@ -19,10 +35,25 @@ exports.confirmAdminPasswordHandler = catchAsync(async (req, res) => {
   const isPasswordCorrect = await user.correctPassword(password);
 
   if (!isPasswordCorrect) {
+    await AuditLog.create({
+      userType: "admin",
+      email,
+      endpoint: "/admin/confirm-password",
+      reason,
+      status: "failure",
+    });
     return res.status(401).json({
       message: "Incorrect password.",
     });
   }
+
+  await AuditLog.create({
+    userType: "admin",
+    email,
+    endpoint: "/admin/confirm-password",
+    reason,
+    status: "success",
+  });
 
   res.status(200).json({
     message: "Password confirmed.",

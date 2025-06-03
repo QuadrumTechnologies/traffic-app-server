@@ -34,6 +34,7 @@ const userDeviceSchema = new Schema({
   deleteAt: { type: Date, default: null },
   isRecalled: { type: Boolean, default: false },
   recallAt: { type: Date, default: null },
+  lastSeen: { type: Date, default: null },
 });
 
 const userPhaseSchema = new Schema({
@@ -43,6 +44,7 @@ const userPhaseSchema = new Schema({
       _id: { type: Schema.Types.ObjectId, auto: true },
       name: { type: String, required: true },
       data: { type: String, required: true },
+      deviceId: { type: String, required: true },
     },
   ],
 });
@@ -65,15 +67,17 @@ const userPatternSchema = new Schema({
           signalString: { type: String, required: true },
           duration: { type: Number, required: true },
           id: { type: Number, required: true },
+          deviceId: { type: String, required: true },
         },
       ],
+      deviceId: { type: String, required: true },
     },
   ],
 });
 
 const userPlanSchema = new Schema(
   {
-    email: { type: String, required: true, unique: true },
+    email: { type: String, required: true },
     plans: [
       {
         id: { type: String, required: true },
@@ -90,6 +94,7 @@ const userPlanSchema = new Schema(
           ),
         },
         customDate: { type: Date, default: null },
+        deviceId: { type: String, required: true },
       },
     ],
   },

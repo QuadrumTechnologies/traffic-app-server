@@ -25,6 +25,7 @@ const {
   uploadAndDownloadHandler,
 } = require("./handlers/uploadAndDownloadHandler");
 const { manualControlHandler } = require("./handlers/manualHandler");
+const { UserDevice } = require("./models/appModel");
 
 const PORT = 443;
 
@@ -126,13 +127,20 @@ function initWebSocketServer() {
       }
     });
 
-    ws.on("ping", (buffer) => {
+    ws.on("ping", async (buffer) => {
       const idUtf8 = buffer.toString("utf8");
+      const currentTime = new Date().toISOString();
+
+      // Update device lastSeen to null (online)
+      await UserDevice.updateOne(
+        { deviceId: idUtf8 },
+        { $set: { lastSeen: null } }
+      );
 
       const message = JSON.stringify({
         event: "ping_received",
         source: { type: "hardware", id: idUtf8 },
-        timestamp: new Date(),
+        timestamp: currentTime,
       });
 
       wss.clients.forEach((client) => {
@@ -143,6 +151,36 @@ function initWebSocketServer() {
           client.send(message);
         }
       });
+
+      // Clear existing timeout and set new one
+      clearTimeout(timeoutMap[idUtf8]);
+      timeoutMap[idUtf8] = setTimeout(async () => {
+        // Update lastSeen when device goes offline
+        await UserDevice.updateOne(
+          { deviceId: idUtf8 },
+          { $set: { lastSeen: new Date().toISOString() } }
+        );
+        // Broadcast offline status
+        wss.clients.forEach((client) => {
+          if (
+            client.readyState === WebSocket.OPEN &&
+            client.clientType !== idUtf8
+          ) {
+            client.send(
+              JSON.stringify({
+                event: "device_status",
+                source: {
+                  type: "hardware",
+                  id: idUtf8,
+                  status: false,
+                  lastSeen: new Date().toISOString(),
+                },
+                timestamp: new Date(),
+              })
+            );
+          }
+        });
+      }, 30000);
     });
 
     ws.on("close", () => {

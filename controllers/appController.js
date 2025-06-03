@@ -7,6 +7,7 @@ const {
   UserDeviceState,
   UserDeviceInfo,
 } = require("../models/appModel");
+const { AuditLog } = require("../models/auditModel");
 const User = require("../models/userModel");
 const catchAsync = require("../utils/catchAsync");
 const Email = require("../utils/email");
@@ -111,20 +112,26 @@ exports.getAllDeviceByUserHandler = catchAsync(async (req, res, next) => {
 exports.addPhaseByUserHandler = catchAsync(async (req, res, next) => {
   console.log("Adding Phase by user", req.body);
 
-  const { phaseName, phaseData } = req.body;
+  const { phaseName, phaseData, deviceId } = req.body;
+
+  if (!deviceId) {
+    return res.status(400).json({
+      message: "Device ID is required.",
+    });
+  }
 
   // Check if phases already exist for the user
   const userPhase = await UserPhase.findOne({ email: req.user.email });
 
-  // Check for existing phase name
+  // Check for existing phase name for this device
   if (userPhase) {
     const existingPhase = userPhase.phases.find(
-      (phase) => phase.name === phaseName
+      (phase) => phase.name === phaseName && phase.deviceId === deviceId
     );
 
     if (existingPhase) {
       return res.status(400).json({
-        message: `Phase with name "${phaseName}" already exists!`,
+        message: `Phase with name "${phaseName}" already exists for device ${deviceId}!`,
       });
     }
   }
@@ -132,6 +139,7 @@ exports.addPhaseByUserHandler = catchAsync(async (req, res, next) => {
   const phase = {
     name: phaseName,
     data: phaseData,
+    deviceId,
   };
 
   const updatedPhase = await UserPhase.findOneAndUpdate(
@@ -141,7 +149,7 @@ exports.addPhaseByUserHandler = catchAsync(async (req, res, next) => {
   );
 
   res.status(201).json({
-    message: `Phase ${phaseName} added successfully!`,
+    message: `Phase ${phaseName} added successfully for device ${deviceId}!`,
     phase: updatedPhase.phases[updatedPhase.phases.length - 1],
   });
 });
@@ -219,7 +227,14 @@ exports.addPatternByUserHandler = catchAsync(async (req, res) => {
     amberEnabled,
     amberDurationRedToGreen,
     amberDurationGreenToRed,
+    deviceId,
   } = req.body;
+
+  if (!deviceId) {
+    return res.status(400).json({
+      message: "Device ID is required.",
+    });
+  }
 
   // Ensure the user exists
   const user = await UserPhase.findOne({ email: req.user.email });
@@ -227,15 +242,16 @@ exports.addPatternByUserHandler = catchAsync(async (req, res) => {
     return res.status(404).json({ message: "User not found!" });
   }
 
-  // Ensure no duplicate pattern name
+  // Ensure no duplicate pattern name for this device
   const existingPattern = await UserPattern.findOne({
     email: req.user.email,
     "patterns.name": name,
+    "patterns.deviceId": deviceId,
   });
 
   if (existingPattern) {
     return res.status(400).json({
-      message: `Pattern name "${name}" already exists!`,
+      message: `Pattern name "${name}" already exists for device ${deviceId}!`,
     });
   }
 
@@ -253,7 +269,9 @@ exports.addPatternByUserHandler = catchAsync(async (req, res) => {
       signalString: phase.signalString,
       duration: phase.duration,
       id: index,
+      deviceId,
     })),
+    deviceId,
   };
 
   // Add the pattern to the database
@@ -264,7 +282,7 @@ exports.addPatternByUserHandler = catchAsync(async (req, res) => {
   );
 
   res.status(201).json({
-    message: `Pattern "${name}" added successfully!`,
+    message: `Pattern "${name}" added successfully for device ${deviceId}!`,
   });
 });
 
@@ -377,8 +395,15 @@ exports.editPatternByUserHandler = catchAsync(async (req, res) => {
 });
 
 exports.addPlanByUserHandler = catchAsync(async (req, res) => {
-  // console.log("Adding or updating plan by user", req.body.schedule);
-  const { id, name, schedule, dayType, customDate } = req.body;
+  console.log("Adding or updating plan by user", req.body);
+
+  const { id, name, schedule, dayType, customDate, deviceId } = req.body;
+
+  if (!deviceId) {
+    return res.status(400).json({
+      message: "Device ID is required.",
+    });
+  }
 
   let userPlan = await UserPlan.findOne({ email: req.user.email });
   if (!userPlan) {
@@ -386,7 +411,7 @@ exports.addPlanByUserHandler = catchAsync(async (req, res) => {
   }
 
   const existingPlanIndex = userPlan.plans.findIndex(
-    (plan) => plan.name === name
+    (plan) => plan.name === name && plan.deviceId === deviceId
   );
 
   const newPlan = {
@@ -395,13 +420,14 @@ exports.addPlanByUserHandler = catchAsync(async (req, res) => {
     dayType,
     schedule,
     customDate,
+    deviceId,
   };
 
   if (existingPlanIndex !== -1) {
     userPlan.plans[existingPlanIndex] = newPlan;
     await userPlan.save();
     res.status(200).json({
-      message: `Plan "${name}" has been successfully overwritten!`,
+      message: `Plan "${name}" has been successfully overwritten for device ${deviceId}!`,
       plan: newPlan,
     });
   } else {
@@ -409,7 +435,7 @@ exports.addPlanByUserHandler = catchAsync(async (req, res) => {
     userPlan.plans.push(newPlan);
     await userPlan.save();
     res.status(201).json({
-      message: `Plan "${name}" added successfully!`,
+      message: `Plan "${name}" added successfully for device ${deviceId}!`,
       plan: newPlan,
     });
   }
@@ -624,13 +650,26 @@ exports.deleteAllPlansByUserHandler = catchAsync(async (req, res) => {
 
 exports.confirmPasswordHandler = catchAsync(async (req, res) => {
   console.log("Confirming password by user", req.body);
-  const { password } = req.body;
+  const { password, reason } = req.body;
+
+  if (!reason) {
+    return res.status(400).json({
+      message: "Reason for password confirmation is required.",
+    });
+  }
 
   const user = await User.findOne({ email: req.user.email }).select(
     "+password"
   );
 
   if (!user) {
+    await AuditLog.create({
+      userType: "user",
+      email: req.user.email,
+      endpoint: "/confirm-password",
+      reason,
+      status: "failure",
+    });
     return res.status(404).json({
       message: "User not found.",
     });
@@ -639,13 +678,25 @@ exports.confirmPasswordHandler = catchAsync(async (req, res) => {
   const isPasswordCorrect = await user.correctPassword(password);
 
   if (!isPasswordCorrect) {
-    console.log("Incorrect");
+    await AuditLog.create({
+      userType: "user",
+      email: req.user.email,
+      endpoint: "/confirm-password",
+      reason,
+      status: "failure",
+    });
     return res.status(401).json({
       message: "Incorrect password.",
     });
   }
 
-  console.log("Correct");
+  await AuditLog.create({
+    userType: "user",
+    email: req.user.email,
+    endpoint: "/confirm-password",
+    reason,
+    status: "success",
+  });
 
   res.status(200).json({
     message: "Password confirmed.",

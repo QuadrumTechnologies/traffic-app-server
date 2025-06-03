@@ -1,12 +1,15 @@
-const { UserDeviceState } = require("../models/appModel");
+const {
+  UserDevice,
+  UserPhase,
+  UserPattern,
+  UserPlan,
+  UserDeviceState,
+  UserDeviceInfo,
+} = require("../models/appModel");
 const catchAsync = require("../utils/catchAsync");
 
-// This function handles the intersection control request from the client
-// It updates the device state based on the action received in the payload
 exports.intersectionControlRequestHandler = catchAsync(
   async (ws, clients, payload) => {
-    // console.log("Received intersection request data from Client", payload);
-
     const deviceState = await UserDeviceState.findOne({
       DeviceID: payload.DeviceID,
     });
@@ -16,6 +19,7 @@ exports.intersectionControlRequestHandler = catchAsync(
       return;
     }
 
+    // Initialize default values if undefined
     if (deviceState.SignalLevel === undefined) {
       deviceState.SignalLevel = 20;
     }
@@ -62,6 +66,26 @@ exports.intersectionControlRequestHandler = catchAsync(
         newActionValue = !deviceState.Reset;
         deviceState.Reset = newActionValue;
         break;
+      case "Reset!":
+        // Hard Reset: Clear all data related to the deviceId
+        await UserDevice.deleteOne({ deviceId: payload.DeviceID });
+        await UserDeviceState.deleteOne({ DeviceID: payload.DeviceID });
+        await UserDeviceInfo.deleteOne({ DeviceID: payload.DeviceID });
+        await UserPhase.updateMany(
+          { email: payload.email },
+          { $pull: { phases: { deviceId: payload.DeviceID } } }
+        );
+        await UserPattern.updateMany(
+          { email: payload.email },
+          { $pull: { patterns: { deviceId: payload.DeviceID } } }
+        );
+        await UserPlan.updateMany(
+          { email: payload.email },
+          { $pull: { plans: { deviceId: payload.DeviceID } } }
+        );
+        // Broadcast Hard Reset to hardware, Indicate reset action for hardware
+        newActionValue = true;
+        break;
       case "SignalLevel":
         newActionValue = payload["SignalLevel"];
         if (
@@ -72,7 +96,6 @@ exports.intersectionControlRequestHandler = catchAsync(
           console.error(`Invalid Signal Level value: ${newActionValue}`);
           return;
         }
-        console.log("Signal Level", newActionValue);
         deviceState.SignalLevel = newActionValue;
         break;
       case "ErrorFlash":
@@ -87,8 +110,12 @@ exports.intersectionControlRequestHandler = catchAsync(
         return;
     }
 
-    await deviceState.save();
+    // Save device state only if not a Hard Reset (since UserDeviceState is deleted in Hard Reset)
+    if (action !== "Reset!") {
+      await deviceState.save();
+    }
 
+    // Broadcast to clients
     clients.forEach((client) => {
       client.send(
         JSON.stringify({
