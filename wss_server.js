@@ -42,6 +42,8 @@ const httpsServer = createServer(options, app);
 
 let wss;
 
+const timeoutMap = new Map();
+
 // Initialize WebSocket server
 function initWebSocketServer() {
   wss = new WebSocket.Server({ server: httpsServer, path: "/ws" });
