@@ -160,7 +160,11 @@ function initWebSocketServer() {
       clearTimeout(timeoutMap[idUtf8]);
       timeoutMap[idUtf8] = setTimeout(async () => {
         // Update lastSeen when device goes offline
-        console.log("Device went offline: 🐦‍🔥🧨", idUtf8);
+        console.log(
+          "Device went offline: 🐦‍🔥🧨",
+          idUtf8,
+          new Date().toISOString()
+        );
         await UserDevice.updateOne(
           { deviceId: idUtf8 },
           { $set: { lastSeen: new Date().toISOString() } }
