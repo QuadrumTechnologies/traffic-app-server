@@ -145,7 +145,7 @@ function initWebSocketServer() {
         timestamp: currentTime,
       });
 
-      console.log("Ping received from device:c 💦💧", idUtf8);
+      console.log("Ping received from device: 💦💧", idUtf8);
 
       wss.clients.forEach((client) => {
         if (

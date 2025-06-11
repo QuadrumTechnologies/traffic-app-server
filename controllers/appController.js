@@ -155,7 +155,7 @@ exports.addPhaseByUserHandler = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllPhaseByUserHandler = catchAsync(async (req, res, next) => {
-  console.log("Getting Phase by user", req.params);
+  console.log("Getting Phase by user", req.user);
 
   const phases = await UserPhase.findOne({ email: req.user.email });
   if (!phases || phases.length === 0) {
@@ -188,13 +188,12 @@ exports.deletePhaseByUserHandler = catchAsync(async (req, res) => {
 });
 
 exports.deleteAllPhasesByUserHandler = catchAsync(async (req, res) => {
-  console.log("Deleting all phases for user", req.params.email);
+  console.log("Deleting all phases for user", req.params);
   const { email } = req.params;
 
-  // Ensure the authenticated user matches the email in the request
-  if (email !== req.user.email) {
-    return res.status(403).json({
-      message: "You are not authorized to delete phases for this user.",
+  if (!email) {
+    return res.status(400).json({
+      message: "Email is required to delete all phases.",
     });
   }
 
@@ -287,7 +286,7 @@ exports.addPatternByUserHandler = catchAsync(async (req, res) => {
 });
 
 exports.getAllPatternsByUserHandler = catchAsync(async (req, res, next) => {
-  console.log("Getting all patterns by user", req.params);
+  console.log("Getting all patterns by user", req.user);
 
   // Find user pattern by email
   const userPatterns = await UserPattern.findOne({ email: req.user.email });
@@ -340,13 +339,12 @@ exports.deletePatternByUserHandler = catchAsync(async (req, res) => {
 });
 
 exports.deleteAllPatternsByUserHandler = catchAsync(async (req, res) => {
-  console.log("Deleting all patterns for user", req.params.email);
+  console.log("Deleting all patterns for user", req.params);
   const { email } = req.params;
 
-  // Ensure the authenticated user matches the email in the request
-  if (email !== req.user.email) {
-    return res.status(403).json({
-      message: "You are not authorized to delete patterns for this user.",
+  if (!email) {
+    return res.status(400).json({
+      message: "Email is required to delete all patterns.",
     });
   }
 
@@ -577,7 +575,7 @@ exports.updatePlanByUserHandler = catchAsync(async (req, res) => {
 });
 
 exports.getAllPlansByUserHandler = catchAsync(async (req, res, next) => {
-  console.log("Getting all plans by user", req.params);
+  console.log("Getting all plans by user", req.user);
 
   const userPlan = await UserPlan.findOne({ email: req.user.email });
 
@@ -624,10 +622,9 @@ exports.deleteAllPlansByUserHandler = catchAsync(async (req, res) => {
   console.log("Deleting all plans for user", req.params.email);
   const { email } = req.params;
 
-  // Ensure the authenticated user matches the email in the request
-  if (email !== req.user.email) {
-    return res.status(403).json({
-      message: "You are not authorized to delete plans for this user.",
+  if (!email) {
+    return res.status(400).json({
+      message: "Email is required to delete all plans.",
     });
   }
 

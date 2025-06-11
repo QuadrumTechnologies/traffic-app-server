@@ -18,21 +18,21 @@ router.patch(
 
 router.post("/phases", appController.addPhaseByUserHandler);
 router.get("/phases", appController.getAllPhaseByUserHandler);
+router.delete("/phases/all/:email", appController.deleteAllPhasesByUserHandler);
 router.delete(
   "/phases/:phaseId/:email",
   appController.deletePhaseByUserHandler
 );
-router.delete("/phases/all/:email", appController.deleteAllPhasesByUserHandler);
 
 router.post("/patterns", appController.addPatternByUserHandler);
 router.get("/patterns", appController.getAllPatternsByUserHandler);
 router.delete(
-  "/patterns/:patternName/:email",
-  appController.deletePatternByUserHandler
-);
-router.delete(
   "/patterns/all/:email",
   appController.deleteAllPatternsByUserHandler
+);
+router.delete(
+  "/patterns/:patternName/:email",
+  appController.deletePatternByUserHandler
 );
 router.put(
   "/patterns/:patternName/:email",
@@ -42,8 +42,8 @@ router.put(
 router.post("/plans", appController.addPlanByUserHandler);
 router.put("/plans", appController.updatePlanByUserHandler);
 router.get("/plans", appController.getAllPlansByUserHandler);
-router.delete("/plans/:planId/:email", appController.deletePlanByUserHandler);
 router.delete("/plans/all/:email", appController.deleteAllPlansByUserHandler);
+router.delete("/plans/:planId/:email", appController.deletePlanByUserHandler);
 
 router.post("/confirm-password", appController.confirmPasswordHandler);
 
