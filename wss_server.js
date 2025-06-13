@@ -10,7 +10,6 @@ const {
   infoDataRequestHandler,
   infoDataHandler,
 } = require("./handlers/infoHandler");
-
 const { signalDataHandler } = require("./handlers/signHandler");
 const {
   deviceStateHandler,
@@ -44,88 +43,106 @@ let wss;
 
 const timeoutMap = new Map();
 
-// Initialize WebSocket server
 function initWebSocketServer() {
   wss = new WebSocket.Server({ server: httpsServer, path: "/ws" });
 
   wss.on("connection", (ws) => {
     console.log("A client is connected");
 
-    // Temporary property to store client type
     ws.clientType = null;
 
     ws.on("message", (message) => {
-      const data = JSON.parse(message);
+      try {
+        const data = JSON.parse(message);
 
-      // Web application logic
-      if (data.event) {
-        console.log(data?.event, "recieved form client");
-        switch (data?.event) {
-          case "identify":
-            console.log(`Client identified as:`, data);
-            ws.clientType = data.clientID;
-            break;
-          case "state_request":
-            stateDataRequestHandler(ws, wss.clients, data?.payload);
-            break;
-          case "info_request":
-            infoDataRequestHandler(ws, wss.clients, data?.payload);
-            break;
-          case "intersection_control_request":
-            intersectionControlRequestHandler(ws, wss.clients, data?.payload);
-            break;
-          case "upload_request":
-            uploadRequestHandler(ws, wss.clients, data?.payload);
-            break;
-          case "download_request":
-            downloadRequestHandler(ws, wss.clients, data?.payload);
-            break;
-          case "signal_request":
-            manualControlHandler(ws, wss.clients, data?.payload);
-            break;
-
-          default:
-            console.log("Unknown event from client:", data.event);
-        }
-      }
-
-      // Hardware logic
-      if (data?.Event === "data") {
-        // console.log(`${data?.Type} data received from hardware`);
-        switch (data?.Type) {
-          case "identify":
-            console.log(`Hardware identified as:`, data.Param.DeviceID);
-            ws.clientType = data.Param.DeviceID;
-            console.log(ws.clientType);
-            return wss.clients.forEach((client) => {
-              if (client.clientType !== data.Param.DeviceID) return;
-              client.send(
+        // Web application logic
+        if (data.event) {
+          console.log(data?.event, "received from client");
+          switch (data?.event) {
+            case "identify":
+              console.log(`Client identified as:`, data);
+              ws.clientType = data.clientID;
+              ws.send(
                 JSON.stringify({
-                  Event: "ctrl",
-                  Type: "info",
-                  Param: {
-                    DeviceID: data.Param.DeviceID,
-                    Rtc: Math.floor(Date.now() / 1000 + 3600),
-                  },
+                  event: "identify_success",
+                  clientID: data.clientID,
                 })
               );
-            });
-          case "info":
-            infoDataHandler(ws, wss.clients, data?.Param);
-            break;
-          case "sign":
-            signalDataHandler(ws, wss.clients, data?.Param);
-            break;
-          case "state":
-            deviceStateHandler(ws, wss.clients, data?.Param);
-            break;
-          case "prog":
-            uploadAndDownloadHandler(ws, wss.clients, data?.Param);
-            break;
-
-          default:
-            console.log("Unknown event from hardware:", data?.Event);
+              break;
+            case "state_request":
+              stateDataRequestHandler(ws, wss.clients, data?.payload);
+              break;
+            case "info_request":
+              infoDataRequestHandler(ws, wss.clients, data?.payload);
+              break;
+            case "intersection_control_request":
+              intersectionControlRequestHandler(ws, wss.clients, data?.payload);
+              break;
+            case "upload_request":
+              uploadRequestHandler(ws, wss.clients, data?.payload);
+              break;
+            case "download_request":
+              downloadRequestHandler(ws, wss.clients, data?.payload);
+              break;
+            case "signal_request":
+              manualControlHandler(ws, wss.clients, data?.payload);
+              break;
+            default:
+              console.log("Unknown event from client:", data.event);
+              ws.send(
+                JSON.stringify({
+                  event: "error",
+                  message: `Unknown event: ${data.event}`,
+                })
+              );
+          }
         }
+
+        // Hardware logic
+        if (data?.Event === "data") {
+          switch (data?.Type) {
+            case "identify":
+              console.log(`Hardware identified as:`, data.Param.DeviceID);
+              ws.clientType = data.Param.DeviceID;
+              wss.clients.forEach((client) => {
+                if (client.clientType === data.Param.DeviceID) {
+                  client.send(
+                    JSON.stringify({
+                      Event: "ctrl",
+                      Type: "info",
+                      Param: {
+                        DeviceID: data.Param.DeviceID,
+                        Rtc: Math.floor(Date.now() / 1000 + 3600),
+                      },
+                    })
+                  );
+                }
+              });
+              break;
+            case "info":
+              infoDataHandler(ws, wss.clients, data?.Param);
+              break;
+            case "sign":
+              signalDataHandler(ws, wss.clients, data?.Param);
+              break;
+            case "state":
+              deviceStateHandler(ws, wss.clients, data?.Param);
+              break;
+            case "prog":
+              uploadAndDownloadHandler(ws, wss.clients, data?.Param);
+              break;
+            default:
+              console.log("Unknown event from hardware:", data?.Event);
+          }
+        }
+      } catch (error) {
+        console.error("Error processing message:", error);
+        ws.send(
+          JSON.stringify({
+            event: "error",
+            message: "An error occurred while processing your request.",
+          })
+        );
       }
     });
 
@@ -133,7 +150,6 @@ function initWebSocketServer() {
       const idUtf8 = buffer.toString("utf8");
       const currentTime = new Date().toISOString();
 
-      // Update device lastSeen to null (online)
       await UserDevice.updateOne(
         { deviceId: idUtf8 },
         { $set: { lastSeen: null } }
@@ -156,10 +172,8 @@ function initWebSocketServer() {
         }
       });
 
-      // Clear existing timeout and set new one
       clearTimeout(timeoutMap[idUtf8]);
       timeoutMap[idUtf8] = setTimeout(async () => {
-        // Update lastSeen when device goes offline
         console.log(
           "Device went offline: 🐦‍🔥🧨",
           idUtf8,
@@ -169,7 +183,6 @@ function initWebSocketServer() {
           { deviceId: idUtf8 },
           { $set: { lastSeen: new Date().toISOString() } }
         );
-        // Broadcast offline status
         wss.clients.forEach((client) => {
           if (
             client.readyState === WebSocket.OPEN &&
@@ -197,7 +210,6 @@ function initWebSocketServer() {
     });
   });
 
-  // Handle server shutdown
   httpsServer.on("close", () => {
     wss.close(() => {
       console.log("WebSocket server closed");
