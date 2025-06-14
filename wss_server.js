@@ -154,7 +154,6 @@ function initWebSocketServer() {
     ws.on("ping", async (buffer) => {
       const deviceId = buffer.toString("utf8");
       const currentTime = new Date().toISOString();
-      console.log("Received ping from device:", deviceId, currentTime);
 
       // Verify device exists in AdminDevice
       const adminDevice = await AdminDevice.findOne({ deviceId });
@@ -162,7 +161,6 @@ function initWebSocketServer() {
         console.log(`Unknown device ping: ${deviceId}`);
         return;
       }
-      console.log("Passed admin verification");
 
       // Update lastSeen for UserDevice if assigned
       const userDevice = await UserDevice.findOneAndUpdate(
@@ -190,6 +188,8 @@ function initWebSocketServer() {
           client.clientType === "web_app"
         ) {
           // Send to admins or users who own the device
+          console.log("Inside ping handler for client:", client.userEmail);
+
           if (
             client.isAdmin ||
             (client.userEmail && userEmails.includes(client.userEmail))
