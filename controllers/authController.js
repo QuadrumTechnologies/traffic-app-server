@@ -5,6 +5,7 @@ const AppError = require("../utils/appError");
 const Email = require("../utils/email");
 const User = require("../models/userModel");
 
+// TODO: Refactor this file to use the new User model and methods
 const signToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
