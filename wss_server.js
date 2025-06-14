@@ -178,6 +178,8 @@ function initWebSocketServer() {
       // Get users who own this device
       const userEmails = userDevice ? [userDevice.email] : [];
 
+      console.log("Wss clients count:", wss.clients.size);
+
       wss.clients.forEach((client) => {
         console.log(
           "Ping received from device: 💦💧",
