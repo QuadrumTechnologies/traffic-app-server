@@ -24,7 +24,8 @@ const {
   uploadAndDownloadHandler,
 } = require("./handlers/uploadAndDownloadHandler");
 const { manualControlHandler } = require("./handlers/manualHandler");
-const { UserDevice, AdminDevice } = require("./models/appModel");
+const { UserDevice } = require("./models/appModel");
+const { AdminDevice } = require("./models/adminAppModel");
 
 const PORT = 443;
 
@@ -153,6 +154,7 @@ function initWebSocketServer() {
     ws.on("ping", async (buffer) => {
       const deviceId = buffer.toString("utf8");
       const currentTime = new Date().toISOString();
+      console.log("Received ping from device:", deviceId, currentTime);
 
       // Verify device exists in AdminDevice
       const adminDevice = await AdminDevice.findOne({ deviceId });
