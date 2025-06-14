@@ -23,6 +23,7 @@ const {
   uploadAndDownloadHandler,
 } = require("./handlers/uploadAndDownloadHandler");
 const { manualControlHandler } = require("./handlers/manualHandler");
+const { UserDevice, AdminDevice } = require("./models/appModel");
 
 const PORT = process.env.PORT || 5000;
 
@@ -30,106 +31,208 @@ const httpServer = createServer(app);
 
 let wss;
 
-// Initialize WebSocket server
+const timeoutMap = new Map();
+
 function initWebSocketServer() {
   wss = new WebSocket.Server({ server: httpServer, path: "/ws" });
 
   wss.on("connection", (ws) => {
-    console.log("A client device is connected to the server");
+    console.log("A client is connected");
 
-    // Temporary property to store client type
     ws.clientType = null;
+    ws.userEmail = null;
+    ws.isAdmin = false;
 
-    ws.on("message", (message) => {
-      const data = JSON.parse(message);
+    ws.on("message", async (message) => {
+      try {
+        const data = JSON.parse(message);
 
-      // Web application logic
-      if (data.event) {
-        console.log(data?.event, "recieved form client");
-        switch (data?.event) {
-          case "identify":
-            console.log(`Client identified as:`, data);
-            ws.clientType = data.clientID;
-            break;
-          case "state_request":
-            stateDataRequestHandler(ws, wss.clients, data?.payload);
-            break;
-          case "info_request":
-            infoDataRequestHandler(ws, wss.clients, data?.payload);
-            break;
-          case "intersection_control_request":
-            intersectionControlRequestHandler(ws, wss.clients, data?.payload);
-            break;
-          case "upload_request":
-            uploadRequestHandler(ws, wss.clients, data?.payload);
-            break;
-          case "download_request":
-            downloadRequestHandler(ws, wss.clients, data?.payload);
-            break;
-          case "signal_request":
-            manualControlHandler(ws, wss.clients, data?.payload);
-            break;
-          default:
-            console.log("Unknown event from client:", data.event);
-        }
-      }
-
-      // Hardware logic
-      if (data?.Event === "data") {
-        console.log(`${data?.Type} data received from hardware`);
-        switch (data?.Type) {
-          case "identify":
-            console.log(`Hardware identified as:`, data.Param.DeviceID);
-            ws.clientType = data.Param.DeviceID;
-            console.log(ws.clientType);
-            return wss.clients.forEach((client) => {
-              if (client.clientType !== data.Param.DeviceID) return;
-              client.send(
+        // Web application logic
+        if (data.event) {
+          console.log(data?.event, "received from client");
+          switch (data?.event) {
+            case "identify":
+              // console.log(`Client identified as:`, data);
+              ws.clientType = data.clientType;
+              ws.userEmail = data.userEmail || null;
+              ws.isAdmin = !!data.isAdmin;
+              ws.send(
                 JSON.stringify({
-                  Event: "ctrl",
-                  Type: "info",
-                  Param: {
-                    DeviceID: data.Param.DeviceID,
-                    Rtc: Math.floor(Date.now() / 1000 + 3600),
-                  },
+                  event: "identify_success",
+                  clientType: data.clientType,
+                  userEmail: data.userEmail,
+                  isAdmin: data.isAdmin,
                 })
               );
-            });
-          case "info":
-            infoDataHandler(ws, wss.clients, data?.Param);
-            break;
-          case "sign":
-            signalDataHandler(ws, wss.clients, data?.Param);
-            break;
-          case "state":
-            deviceStateHandler(ws, wss.clients, data?.Param);
-            break;
-          case "prog":
-            uploadAndDownloadHandler(ws, wss.clients, data?.Param);
-            break;
-          default:
-            console.log("Unknown event from hardware:", data?.Event);
+              break;
+            case "state_request":
+              stateDataRequestHandler(ws, wss.clients, data?.payload);
+              break;
+            case "info_request":
+              infoDataRequestHandler(ws, wss.clients, data?.payload);
+              break;
+            case "intersection_control_request":
+              intersectionControlRequestHandler(ws, wss.clients, data?.payload);
+              break;
+            case "upload_request":
+              uploadRequestHandler(ws, wss.clients, data?.payload);
+              break;
+            case "download_request":
+              downloadRequestHandler(ws, wss.clients, data?.payload);
+              break;
+            case "signal_request":
+              manualControlHandler(ws, wss.clients, data?.payload);
+              break;
+            default:
+              console.log("Unknown event from client:", data.event);
+              ws.send(
+                JSON.stringify({
+                  event: "error",
+                  message: `Unknown event: ${data.event}`,
+                })
+              );
+          }
         }
+
+        // Hardware logic
+        if (data?.Event === "data") {
+          console.log(`${data?.Type} data received from hardware`);
+          switch (data?.Type) {
+            case "identify":
+              // console.log(`Hardware identified as:`, data.Param.DeviceID);
+              ws.clientType = data.Param.DeviceID;
+              wss.clients.forEach((client) => {
+                if (client.clientType === data.Param.DeviceID) {
+                  client.send(
+                    JSON.stringify({
+                      Event: "ctrl",
+                      Type: "info",
+                      Param: {
+                        DeviceID: data.Param.DeviceID,
+                        Rtc: Math.floor(Date.now() / 1000 + 3600),
+                      },
+                    })
+                  );
+                }
+              });
+              break;
+            case "info":
+              infoDataHandler(ws, wss.clients, data?.Param);
+              break;
+            case "sign":
+              signalDataHandler(ws, wss.clients, data?.Param);
+              break;
+            case "state":
+              deviceStateHandler(ws, wss.clients, data?.Param);
+              break;
+            case "prog":
+              uploadAndDownloadHandler(ws, wss.clients, data?.Param);
+              break;
+            default:
+              console.log("Unknown event from hardware:", data?.Event);
+          }
+        }
+      } catch (error) {
+        console.error("Error processing message:", error);
+        ws.send(
+          JSON.stringify({
+            event: "error",
+            message: "An error occurred while processing your request.",
+          })
+        );
       }
     });
 
-    ws.on("ping", (buffer) => {
-      const idUtf8 = buffer.toString("utf8");
+    ws.on("ping", async (buffer) => {
+      const deviceId = buffer.toString("utf8");
+      const currentTime = new Date().toISOString();
 
-      const message = JSON.stringify({
-        event: "ping_received",
-        source: { type: "hardware", id: idUtf8 },
-        timestamp: new Date(),
-      });
-
-      wss.clients.forEach((client) => {
-        if (
-          client.readyState === WebSocket.OPEN &&
-          client.clientType !== idUtf8
-        ) {
-          client.send(message);
+      // Verify device exists in AdminDevice
+      try {
+        const adminDevice = await AdminDevice.findOne({ deviceId });
+        if (!adminDevice) {
+          console.log(`Unknown device ping: ${deviceId}`);
+          return;
         }
-      });
+
+        // Update lastSeen for UserDevice if assigned
+        const userDevice = await UserDevice.findOneAndUpdate(
+          { deviceId },
+          { $set: { lastSeen: null } },
+          { new: true }
+        );
+
+        const message = JSON.stringify({
+          event: "ping_received",
+          source: { type: "hardware", id: deviceId },
+          timestamp: currentTime,
+        });
+
+        console.log("Ping received from device: 💦💧", deviceId);
+
+        // Get users who own this device
+        const userEmails = userDevice ? [userDevice.email] : [];
+
+        wss.clients.forEach((client) => {
+          if (
+            client.readyState === WebSocket.OPEN &&
+            client.clientType !== deviceId &&
+            client.clientType === "web_app"
+          ) {
+            // Send to admins or users who own the device
+            if (
+              client.isAdmin ||
+              (client.userEmail && userEmails.includes(client.userEmail))
+            ) {
+              client.send(message);
+            }
+          }
+        });
+
+        clearTimeout(timeoutMap.get(deviceId));
+        timeoutMap.set(
+          deviceId,
+          setTimeout(async () => {
+            console.log(
+              "Device went offline: 🐦‍🔥🧨",
+              deviceId,
+              new Date().toISOString()
+            );
+            await UserDevice.updateOne(
+              { deviceId },
+              { $set: { lastSeen: new Date().toISOString() } }
+            );
+
+            const offlineMessage = JSON.stringify({
+              event: "device_status",
+              source: {
+                type: "hardware",
+                id: deviceId,
+                status: false,
+                lastSeen: new Date().toISOString(),
+              },
+              timestamp: new Date(),
+            });
+
+            wss.clients.forEach((client) => {
+              if (
+                client.readyState === WebSocket.OPEN &&
+                client.clientType !== deviceId &&
+                client.clientType === "web_app"
+              ) {
+                if (
+                  client.isAdmin ||
+                  (client.userEmail && userEmails.includes(client.userEmail))
+                ) {
+                  client.send(offlineMessage);
+                }
+              }
+            });
+          }, 30000)
+        );
+      } catch (error) {
+        console.error(`Error processing ping for device ${deviceId}:`, error);
+      }
     });
 
     ws.on("close", () => {
@@ -137,13 +240,13 @@ function initWebSocketServer() {
     });
   });
 
-  // Handle server shutdown
   httpServer.on("close", () => {
     wss.close(() => {
       console.log("WebSocket server closed");
     });
   });
 }
+
 connectToMongoDB()
   .then(() => {
     console.log("Connection to MongoDB is successful.");

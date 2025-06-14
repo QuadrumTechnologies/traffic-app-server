@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const appController = require("../controllers/appController");
+
 const { authenticateUser } = require("../controllers/authController");
 
 router.get("/devices/:deviceId/:email", appController.getDeviceDetailById);

@@ -24,7 +24,7 @@ const {
   uploadAndDownloadHandler,
 } = require("./handlers/uploadAndDownloadHandler");
 const { manualControlHandler } = require("./handlers/manualHandler");
-const { UserDevice } = require("./models/appModel");
+const { UserDevice, AdminDevice } = require("./models/appModel");
 
 const PORT = 443;
 
@@ -50,22 +50,27 @@ function initWebSocketServer() {
     console.log("A client is connected");
 
     ws.clientType = null;
+    ws.userEmail = null;
+    ws.isAdmin = false;
 
-    ws.on("message", (message) => {
+    ws.on("message", async (message) => {
       try {
         const data = JSON.parse(message);
 
-        // Web application logic
         if (data.event) {
           console.log(data?.event, "received from client");
           switch (data?.event) {
             case "identify":
               console.log(`Client identified as:`, data);
-              ws.clientType = data.clientID;
+              ws.clientType = data.clientType;
+              ws.userEmail = data.userEmail || null;
+              ws.isAdmin = !!data.isAdmin;
               ws.send(
                 JSON.stringify({
                   event: "identify_success",
-                  clientID: data.clientID,
+                  clientType: data.clientType,
+                  userEmail: data.userEmail,
+                  isAdmin: data.isAdmin,
                 })
               );
               break;
@@ -98,7 +103,6 @@ function initWebSocketServer() {
           }
         }
 
-        // Hardware logic
         if (data?.Event === "data") {
           switch (data?.Type) {
             case "identify":
@@ -147,62 +151,88 @@ function initWebSocketServer() {
     });
 
     ws.on("ping", async (buffer) => {
-      const idUtf8 = buffer.toString("utf8");
+      const deviceId = buffer.toString("utf8");
       const currentTime = new Date().toISOString();
 
-      await UserDevice.updateOne(
-        { deviceId: idUtf8 },
-        { $set: { lastSeen: null } }
+      // Verify device exists in AdminDevice
+      const adminDevice = await AdminDevice.findOne({ deviceId });
+      if (!adminDevice) {
+        console.log(`Unknown device ping: ${deviceId}`);
+        return;
+      }
+
+      // Update lastSeen for UserDevice if assigned
+      const userDevice = await UserDevice.findOneAndUpdate(
+        { deviceId },
+        { $set: { lastSeen: null } },
+        { new: true }
       );
 
       const message = JSON.stringify({
         event: "ping_received",
-        source: { type: "hardware", id: idUtf8 },
+        source: { type: "hardware", id: deviceId },
         timestamp: currentTime,
       });
 
-      console.log("Ping received from device: 💦💧", idUtf8);
+      console.log("Ping received from device: 💦💧", deviceId);
+
+      // Get users who own this device
+      const userEmails = userDevice ? [userDevice.email] : [];
 
       wss.clients.forEach((client) => {
         if (
           client.readyState === WebSocket.OPEN &&
-          client.clientType !== idUtf8
+          client.clientType !== deviceId &&
+          client.clientType === "web_app"
         ) {
-          client.send(message);
+          // Send to admins or users who own the device
+          if (
+            client.isAdmin ||
+            (client.userEmail && userEmails.includes(client.userEmail))
+          ) {
+            client.send(message);
+          }
         }
       });
 
-      clearTimeout(timeoutMap[idUtf8]);
-      timeoutMap[idUtf8] = setTimeout(async () => {
+      clearTimeout(timeoutMap[deviceId]);
+      timeoutMap[deviceId] = setTimeout(async () => {
         console.log(
           "Device went offline: 🐦‍🔥🧨",
-          idUtf8,
+          deviceId,
           new Date().toISOString()
         );
         await UserDevice.updateOne(
-          { deviceId: idUtf8 },
+          { deviceId },
           { $set: { lastSeen: new Date().toISOString() } }
         );
+
+        const offlineMessage = JSON.stringify({
+          event: "device_status",
+          source: {
+            type: "hardware",
+            id: deviceId,
+            status: false,
+            lastSeen: new Date().toISOString(),
+          },
+          timestamp: new Date(),
+        });
+
         wss.clients.forEach((client) => {
           if (
             client.readyState === WebSocket.OPEN &&
-            client.clientType !== idUtf8
+            client.clientType !== deviceId &&
+            client.clientType === "web_app"
           ) {
-            client.send(
-              JSON.stringify({
-                event: "device_status",
-                source: {
-                  type: "hardware",
-                  id: idUtf8,
-                  status: false,
-                  lastSeen: new Date().toISOString(),
-                },
-                timestamp: new Date(),
-              })
-            );
+            if (
+              client.isAdmin ||
+              (client.userEmail && userEmails.includes(client.userEmail))
+            ) {
+              client.send(offlineMessage);
+            }
           }
         });
-      }, 20000);
+      }, 30000); // Align with frontend timeout
     });
 
     ws.on("close", () => {
