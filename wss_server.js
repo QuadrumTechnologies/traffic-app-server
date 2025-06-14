@@ -175,17 +175,13 @@ function initWebSocketServer() {
         timestamp: currentTime,
       });
 
-      // Get users who own this device
-      const userEmails = userDevice ? [userDevice.email] : [];
-
       console.log("Wss clients count:", wss.clients.size);
 
       wss.clients.forEach((client) => {
         console.log(
           "Ping received from device: 💦💧",
           deviceId,
-          client.userEmail,
-          userEmails.includes(client.userEmail)
+          client.userEmail
         );
 
         if (
@@ -193,11 +189,8 @@ function initWebSocketServer() {
           client.clientType !== deviceId &&
           client.clientType === "web_app"
         ) {
-          // Send to admins or users who own the device
-          if (
-            client.isAdmin ||
-            (client.userEmail && userEmails.includes(client.userEmail))
-          ) {
+          // Send to admins or user who own the device
+          if (client.isAdmin || client.userEmail) {
             console.log("Sending ping message to client:", client.userEmail);
             client.send(message);
           }
