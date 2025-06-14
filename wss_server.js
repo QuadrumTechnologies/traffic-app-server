@@ -178,14 +178,14 @@ function initWebSocketServer() {
       // Get users who own this device
       const userEmails = userDevice ? [userDevice.email] : [];
 
-      console.log(
-        "Ping received from device: 💦💧",
-        deviceId,
-        client.userEmail,
-        userEmails.includes(client.userEmail)
-      );
-
       wss.clients.forEach((client) => {
+        console.log(
+          "Ping received from device: 💦💧",
+          deviceId,
+          client.userEmail,
+          userEmails.includes(client.userEmail)
+        );
+
         if (
           client.readyState === WebSocket.OPEN &&
           client.clientType !== deviceId &&
