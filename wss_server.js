@@ -202,8 +202,7 @@ function initWebSocketServer() {
         console.log(
           "Device went offline: 🐦‍🔥🧨",
           deviceId,
-          new Date().toISOString(),
-          userEmails
+          new Date().toISOString()
         );
         await UserDevice.updateOne(
           { deviceId },
@@ -228,10 +227,7 @@ function initWebSocketServer() {
             client.clientType !== deviceId &&
             client.clientType === "web_app"
           ) {
-            if (
-              client.isAdmin ||
-              (client.userEmail && userEmails.includes(client.userEmail))
-            ) {
+            if (client.isAdmin || client.userEmail) {
               console.log(
                 "Sending offline message to client:",
                 client.userEmail
@@ -241,7 +237,7 @@ function initWebSocketServer() {
             }
           }
         });
-      }, 30000); // Align with frontend timeout
+      }, 30000);
     });
 
     ws.on("close", () => {
