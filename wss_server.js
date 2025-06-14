@@ -160,6 +160,7 @@ function initWebSocketServer() {
         console.log(`Unknown device ping: ${deviceId}`);
         return;
       }
+      console.log("Passed admin verification");
 
       // Update lastSeen for UserDevice if assigned
       const userDevice = await UserDevice.findOneAndUpdate(
@@ -178,6 +179,7 @@ function initWebSocketServer() {
 
       // Get users who own this device
       const userEmails = userDevice ? [userDevice.email] : [];
+      console.log("Users who own this device:", userEmails);
 
       wss.clients.forEach((client) => {
         if (
@@ -190,6 +192,7 @@ function initWebSocketServer() {
             client.isAdmin ||
             (client.userEmail && userEmails.includes(client.userEmail))
           ) {
+            console.log("Sending ping message to client:", client.userEmail);
             client.send(message);
           }
         }
@@ -200,12 +203,14 @@ function initWebSocketServer() {
         console.log(
           "Device went offline: 🐦‍🔥🧨",
           deviceId,
-          new Date().toISOString()
+          new Date().toISOString(),
+          userEmails
         );
         await UserDevice.updateOne(
           { deviceId },
           { $set: { lastSeen: new Date().toISOString() } }
         );
+        console.log("Updated lastSeen for UserDevice:", deviceId);
 
         const offlineMessage = JSON.stringify({
           event: "device_status",
@@ -228,6 +233,11 @@ function initWebSocketServer() {
               client.isAdmin ||
               (client.userEmail && userEmails.includes(client.userEmail))
             ) {
+              console.log(
+                "Sending offline message to client:",
+                client.userEmail
+              );
+
               client.send(offlineMessage);
             }
           }
