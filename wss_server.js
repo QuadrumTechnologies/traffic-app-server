@@ -190,10 +190,10 @@ function initWebSocketServer() {
           client.clientType === "web_app"
         ) {
           // Send to admins or user who own the device
-          // if (client.isAdmin || client.userEmail) {
-          console.log("Sending ping message to client:", client.userEmail);
-          client.send(message);
-          // }
+          if (client.isAdmin || client.userEmail) {
+            console.log("Sending ping message to client:", client.userEmail);
+            client.send(message);
+          }
         }
       });
 
@@ -227,11 +227,13 @@ function initWebSocketServer() {
             client.clientType !== deviceId &&
             client.clientType === "web_app"
           ) {
-            // if (client.isAdmin || client.userEmail) {
-            client.send(offlineMessage);
-            console.log("Sending offline message to client:", client.userEmail);
-
-            // }
+            if (client.isAdmin || client.userEmail) {
+              client.send(offlineMessage);
+              console.log(
+                "Sending offline message to client:",
+                client.userEmail
+              );
+            }
           }
         });
       }, 30000);
