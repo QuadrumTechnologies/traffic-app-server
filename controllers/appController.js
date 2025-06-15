@@ -98,7 +98,7 @@ exports.addDeviceByUserHandler = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllDeviceByUserHandler = catchAsync(async (req, res, next) => {
-  console.log("Getting all devices by user", req.user.email);
+  // console.log("Getting all devices by user", req.user.email);
 
   const devices = await UserDevice.find({
     email: req.user.email,
@@ -167,7 +167,7 @@ exports.addPhaseByUserHandler = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllPhaseByUserHandler = catchAsync(async (req, res, next) => {
-  console.log("Getting Phase by user", req.user);
+  // console.log("Getting Phase by user", req.user);
   const phases = await UserPhase.findOne({ email: req.user.email });
 
   if (!phases || phases.phases.length === 0) {
@@ -186,7 +186,7 @@ exports.getAllPhaseByUserHandler = catchAsync(async (req, res, next) => {
 });
 
 exports.deletePhaseByUserHandler = catchAsync(async (req, res) => {
-  console.log("Deleting phase by user", req.params);
+  // console.log("Deleting phase by user", req.params);
   const { phaseId } = req.params;
 
   const updatedUser = await UserPhase.findOneAndUpdate(
@@ -209,7 +209,7 @@ exports.deletePhaseByUserHandler = catchAsync(async (req, res) => {
 });
 
 exports.deleteAllPhasesByUserHandler = catchAsync(async (req, res) => {
-  console.log("Deleting all phases for user", req.params);
+  // console.log("Deleting all phases for user", req.params);
   const { email } = req.params;
 
   if (!email) {
@@ -239,7 +239,7 @@ exports.deleteAllPhasesByUserHandler = catchAsync(async (req, res) => {
 });
 
 exports.addPatternByUserHandler = catchAsync(async (req, res) => {
-  console.log("Adding pattern by user", req.body);
+  // console.log("Adding pattern by user", req.body);
   const {
     name,
     configuredPhases,
@@ -311,7 +311,7 @@ exports.addPatternByUserHandler = catchAsync(async (req, res) => {
 });
 
 exports.getAllPatternsByUserHandler = catchAsync(async (req, res, next) => {
-  console.log("Getting all patterns by user", req.user);
+  // console.log("Getting all patterns by user", req.user);
   const userPatterns = await UserPattern.findOne({ email: req.user.email });
 
   if (!userPatterns || userPatterns.patterns.length === 0) {
@@ -347,7 +347,7 @@ exports.getAllPatternsByUserHandler = catchAsync(async (req, res, next) => {
 });
 
 exports.deletePatternByUserHandler = catchAsync(async (req, res) => {
-  console.log("Deleting pattern by user", req.params);
+  // console.log("Deleting pattern by user", req.params);
   const { patternName } = req.params;
 
   const updatedUser = await UserPattern.findOneAndUpdate(
@@ -370,7 +370,7 @@ exports.deletePatternByUserHandler = catchAsync(async (req, res) => {
 });
 
 exports.deleteAllPatternsByUserHandler = catchAsync(async (req, res) => {
-  console.log("Deleting all patterns for user", req.params);
+  // console.log("Deleting all patterns for user", req.params);
 
   const { email } = req.params;
 

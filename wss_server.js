@@ -59,7 +59,7 @@ function initWebSocketServer() {
         const data = JSON.parse(message);
 
         if (data.event) {
-          console.log(data?.event, "received from client");
+          console.log(data?.event, "received from client", data);
           switch (data?.event) {
             case "identify":
               console.log(`Client identified as:`, data);

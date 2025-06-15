@@ -38,6 +38,7 @@ function initWebSocketServer() {
 
   wss.on("connection", (ws) => {
     console.log("A client is connected");
+    console.log("Wss clients count:", wss.clients.size);
 
     ws.clientType = null;
     ws.userEmail = null;
@@ -49,10 +50,9 @@ function initWebSocketServer() {
 
         // Web application logic
         if (data.event) {
-          console.log(data?.event, "received from client");
           switch (data?.event) {
             case "identify":
-              // console.log(`Client identified as:`, data);
+              console.log(`Client identified as:`, data);
               ws.clientType = data.clientType;
               ws.userEmail = data.userEmail || null;
               ws.isAdmin = !!data.isAdmin;

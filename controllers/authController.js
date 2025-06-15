@@ -65,7 +65,6 @@ const sendVerificationEmail = async (user, req, res) => {
 };
 
 exports.authenticateUser = catchAsync(async (req, res, next) => {
-  console.log("Authenticating user");
   let token;
 
   const authHeader = req.headers.authorization;
@@ -91,7 +90,7 @@ exports.authenticateUser = catchAsync(async (req, res, next) => {
         message: "The user associated with this token no longer exists.",
       });
     }
-    console.log("Current user:", currentUser.email);
+    console.log("Current authenticated user:", currentUser.email);
 
     req.user = currentUser;
     next();
