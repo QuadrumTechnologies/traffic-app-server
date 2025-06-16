@@ -653,7 +653,6 @@ exports.deleteAllPlansByUserHandler = catchAsync(async (req, res) => {
 });
 
 exports.confirmPasswordHandler = catchAsync(async (req, res) => {
-  console.log("Confirming password by user", req.body);
   const { password, reason } = req.body;
 
   if (!reason) {

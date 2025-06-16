@@ -10,6 +10,8 @@ const catchAsync = require("../utils/catchAsync");
 
 exports.intersectionControlRequestHandler = catchAsync(
   async (ws, clients, payload) => {
+    console.log("Received intersection control request:", payload);
+
     try {
       const deviceState = await UserDeviceState.findOne({
         DeviceID: payload.DeviceID,
@@ -53,6 +55,7 @@ exports.intersectionControlRequestHandler = catchAsync(
 
       switch (action) {
         case "Auto":
+          console.log('"Manual" action received, defaulting to "Auto".');
           newActionValue = !deviceState.Auto;
           deviceState.Auto = newActionValue;
           break;
@@ -146,6 +149,7 @@ exports.intersectionControlRequestHandler = catchAsync(
 
       // Broadcast to clients
       clients.forEach((client) => {
+        if (client.clientType !== payload.DeviceID) return;
         client.send(
           JSON.stringify({
             Event: "ctrl",

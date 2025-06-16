@@ -208,8 +208,6 @@ function initWebSocketServer() {
           { deviceId },
           { $set: { lastSeen: new Date().toISOString() } }
         );
-        console.log("Updated lastSeen for UserDevice:", deviceId);
-
         const offlineMessage = JSON.stringify({
           event: "device_status",
           source: {
