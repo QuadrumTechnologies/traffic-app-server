@@ -55,7 +55,6 @@ exports.intersectionControlRequestHandler = catchAsync(
 
       switch (action) {
         case "Auto":
-          console.log('"Manual" action received, defaulting to "Auto".');
           newActionValue = !deviceState.Auto;
           deviceState.Auto = newActionValue;
           break;
@@ -75,6 +74,37 @@ exports.intersectionControlRequestHandler = catchAsync(
           newActionValue =
             payload.Power !== undefined ? payload.Power : !deviceState.Power;
           deviceState.Power = newActionValue;
+
+          if (payload.Power === false) {
+            await UserDevice.updateOne(
+              { deviceId },
+              { $set: { lastSeen: new Date().toISOString() } }
+            );
+            const offlineMessage = JSON.stringify({
+              event: "device_status",
+              source: {
+                type: "hardware",
+                id: deviceId,
+                status: false,
+                lastSeen: new Date().toISOString(),
+              },
+              timestamp: new Date(),
+            });
+            clients.forEach((client) => {
+              if (
+                client.clientType !== payload.DeviceID &&
+                client.clientType === "web_app"
+              ) {
+                if (client.isAdmin || client.userEmail) {
+                  client.send(offlineMessage);
+                  console.log(
+                    "Sending offline message to client:",
+                    client.userEmail
+                  );
+                }
+              }
+            });
+          }
           break;
         case "Reset":
           newActionValue = !deviceState.Reset;
