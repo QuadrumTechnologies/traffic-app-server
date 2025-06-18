@@ -77,14 +77,14 @@ exports.intersectionControlRequestHandler = catchAsync(
 
           if (payload.Power === false) {
             await UserDevice.updateOne(
-              { deviceId },
+              { deviceId: payload.DeviceID },
               { $set: { lastSeen: new Date().toISOString() } }
             );
             const offlineMessage = JSON.stringify({
               event: "device_status",
               source: {
                 type: "hardware",
-                id: deviceId,
+                id: payload.DeviceID,
                 status: false,
                 lastSeen: new Date().toISOString(),
               },
