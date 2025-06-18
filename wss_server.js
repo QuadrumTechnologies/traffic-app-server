@@ -181,6 +181,7 @@ function initWebSocketServer() {
         source: { type: "hardware", id: deviceId },
         timestamp: currentTime,
       });
+      console.log("wss clients count:", wss.clients.size);
 
       wss.clients.forEach((client) => {
         console.log(
