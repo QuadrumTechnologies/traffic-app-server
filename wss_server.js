@@ -24,7 +24,7 @@ const {
   uploadAndDownloadHandler,
 } = require("./handlers/uploadAndDownloadHandler");
 const { manualControlHandler } = require("./handlers/manualHandler");
-const { UserDevice } = require("./models/appModel");
+const { UserDevice, UserDeviceState } = require("./models/appModel");
 const { AdminDevice } = require("./models/adminAppModel");
 
 const PORT = 443;
@@ -169,13 +169,17 @@ function initWebSocketServer() {
         { new: true }
       );
 
+      const deviceState = await UserDeviceState.findOne({
+        DeviceID: deviceId,
+      });
+      deviceState.Power = true;
+      await deviceState.save();
+
       const message = JSON.stringify({
         event: "ping_received",
         source: { type: "hardware", id: deviceId },
         timestamp: currentTime,
       });
-
-      console.log("Wss clients count:", wss.clients.size);
 
       wss.clients.forEach((client) => {
         console.log(
