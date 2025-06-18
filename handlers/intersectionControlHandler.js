@@ -78,16 +78,20 @@ exports.intersectionControlRequestHandler = catchAsync(
           if (payload.Power === false) {
             // If the device is powered off, update lastSeen and notify clients
 
-            const device = await UserDevice.updateOne(
-              { deviceId: payload.DeviceID },
-              { $set: { lastSeen: new Date().toISOString() } }
+            const userDevice = await UserDevice.findOneAndUpdate(
+              { deviceId },
+              { $set: { lastSeen: null } },
+              { new: true }
             );
+            const deviceOwnerEmail = userDevice?.email;
+
             console.log(
               "Device powered off:",
               payload.DeviceID,
               new Date().toISOString(),
               device
             );
+
             const offlineMessage = JSON.stringify({
               event: "device_status",
               source: {
@@ -103,10 +107,10 @@ exports.intersectionControlRequestHandler = catchAsync(
                 client.clientType !== payload.DeviceID &&
                 client.clientType === "web_app"
               ) {
-                if (client.isAdmin || client.userEmail) {
+                if (client.isAdmin || client.userEmail === deviceOwnerEmail) {
                   client.send(offlineMessage);
                   console.log(
-                    "Sending offline message to client:",
+                    "Sending offline message to client from intersectionControlRequestHandler: ",
                     client.userEmail
                   );
                 }

@@ -168,6 +168,7 @@ function initWebSocketServer() {
         { $set: { lastSeen: null } },
         { new: true }
       );
+      const deviceOwnerEmail = userDevice?.email;
 
       const deviceState = await UserDeviceState.findOne({
         DeviceID: deviceId,
@@ -194,7 +195,7 @@ function initWebSocketServer() {
           client.clientType === "web_app"
         ) {
           // Send to admins or user who own the device
-          if (client.isAdmin || client.userEmail) {
+          if (client.isAdmin || client.userEmail === deviceOwnerEmail) {
             console.log("Sending ping message to client:", client.userEmail);
             client.send(message);
           }
@@ -203,20 +204,17 @@ function initWebSocketServer() {
 
       clearTimeout(timeoutMap[deviceId]);
       timeoutMap[deviceId] = setTimeout(async () => {
+        const userDevice = await UserDevice.findOneAndUpdate(
+          { deviceId },
+          { $set: { lastSeen: null } },
+          { new: true }
+        );
+        const deviceOwnerEmail = userDevice?.email;
         console.log(
           "Device went offline: 🐦‍🔥🧨",
           deviceId,
-          new Date().toISOString()
-        );
-        const device = await UserDevice.updateOne(
-          { deviceId },
-          { $set: { lastSeen: new Date().toISOString() } }
-        );
-        console.log(
-          "Device powered off WSS:",
-          deviceId,
           new Date().toISOString(),
-          device
+          userDevice
         );
         const offlineMessage = JSON.stringify({
           event: "device_status",
@@ -235,7 +233,7 @@ function initWebSocketServer() {
             client.clientType !== deviceId &&
             client.clientType === "web_app"
           ) {
-            if (client.isAdmin || client.userEmail) {
+            if (client.isAdmin || client.userEmail === deviceOwnerEmail) {
               client.send(offlineMessage);
               console.log(
                 "Sending offline message to client:",
