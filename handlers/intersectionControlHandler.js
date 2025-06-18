@@ -76,9 +76,17 @@ exports.intersectionControlRequestHandler = catchAsync(
           deviceState.Power = newActionValue;
 
           if (payload.Power === false) {
-            await UserDevice.updateOne(
+            // If the device is powered off, update lastSeen and notify clients
+
+            const device = await UserDevice.updateOne(
               { deviceId: payload.DeviceID },
               { $set: { lastSeen: new Date().toISOString() } }
+            );
+            console.log(
+              "Device powered off:",
+              payload.DeviceID,
+              new Date().toISOString(),
+              device
             );
             const offlineMessage = JSON.stringify({
               event: "device_status",

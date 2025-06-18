@@ -208,9 +208,15 @@ function initWebSocketServer() {
           deviceId,
           new Date().toISOString()
         );
-        await UserDevice.updateOne(
+        const device = await UserDevice.updateOne(
           { deviceId },
           { $set: { lastSeen: new Date().toISOString() } }
+        );
+        console.log(
+          "Device powered off WSS:",
+          payload.DeviceID,
+          new Date().toISOString(),
+          device
         );
         const offlineMessage = JSON.stringify({
           event: "device_status",
