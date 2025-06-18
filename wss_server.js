@@ -214,7 +214,7 @@ function initWebSocketServer() {
         );
         console.log(
           "Device powered off WSS:",
-          payload.DeviceID,
+          deviceId,
           new Date().toISOString(),
           device
         );
