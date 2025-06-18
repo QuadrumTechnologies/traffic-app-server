@@ -186,7 +186,10 @@ function initWebSocketServer() {
         console.log(
           "Ping received from device: 💦💧",
           deviceId,
-          client.userEmail
+          client.userEmail,
+          deviceOwnerEmail,
+          client.clientType,
+          client.isAdmin
         );
 
         if (
