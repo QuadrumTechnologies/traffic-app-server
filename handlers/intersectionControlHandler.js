@@ -79,8 +79,8 @@ exports.intersectionControlRequestHandler = catchAsync(
             // If the device is powered off, update lastSeen and notify clients
 
             const userDevice = await UserDevice.findOneAndUpdate(
-              { deviceId },
-              { $set: { lastSeen: null } },
+              { deviceId: payload.DeviceID },
+              { $set: { lastSeen: new Date().toISOString() } },
               { new: true }
             );
             const deviceOwnerEmail = userDevice?.email;
