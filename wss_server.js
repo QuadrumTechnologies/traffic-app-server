@@ -210,7 +210,7 @@ function initWebSocketServer() {
       timeoutMap[deviceId] = setTimeout(async () => {
         const userDevice = await UserDevice.findOneAndUpdate(
           { deviceId },
-          { $set: { lastSeen: null } },
+          { $set: { lastSeen: new Date().toISOString() } },
           { new: true }
         );
         const deviceOwnerEmail = userDevice?.email;
