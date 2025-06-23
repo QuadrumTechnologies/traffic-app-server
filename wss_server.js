@@ -26,6 +26,7 @@ const {
 const { manualControlHandler } = require("./handlers/manualHandler");
 const { UserDevice, UserDeviceState } = require("./models/appModel");
 const { AdminDevice } = require("./models/adminAppModel");
+const { setDeviceOnline } = require("./handlers/deviceStatusNotifiesHandler");
 
 const PORT = 443;
 
@@ -124,6 +125,8 @@ function initWebSocketServer() {
                   );
                 }
               });
+              // Set device online immediately
+              await setDeviceOnline(deviceId, wss, timeoutMap);
               break;
             case "info":
               infoDataHandler(ws, wss.clients, data?.Param);
@@ -154,7 +157,6 @@ function initWebSocketServer() {
 
     ws.on("ping", async (buffer) => {
       const deviceId = buffer.toString("utf8");
-      const currentTime = new Date().toISOString();
 
       // Verify device exists in AdminDevice
       const adminDevice = await AdminDevice.findOne({ deviceId });
@@ -163,91 +165,8 @@ function initWebSocketServer() {
         return;
       }
 
-      // Update lastSeen for UserDevice if assigned
-      const userDevice = await UserDevice.findOneAndUpdate(
-        { deviceId },
-        { $set: { lastSeen: null } },
-        { new: true }
-      );
-      const deviceOwnerEmail = userDevice?.email;
-
-      const deviceState = await UserDeviceState.findOne({
-        DeviceID: deviceId,
-      });
-      deviceState.Power = true;
-      await deviceState.save();
-
-      const message = JSON.stringify({
-        event: "ping_received",
-        source: { type: "hardware", id: deviceId },
-        timestamp: currentTime,
-      });
-      console.log("wss clients count:", wss.clients.size);
-
-      wss.clients.forEach((client) => {
-        console.log(
-          "Ping received from device: 💦💧",
-          deviceId,
-          client.userEmail,
-          deviceOwnerEmail,
-          client.clientType,
-          client.isAdmin
-        );
-
-        if (
-          client.readyState === WebSocket.OPEN &&
-          client.clientType !== deviceId &&
-          client.clientType === "web_app"
-        ) {
-          // Send to admins or user who own the device
-          if (client.isAdmin || client.userEmail === deviceOwnerEmail) {
-            console.log("Sending ping message to client:", client.userEmail);
-            client.send(message);
-          }
-        }
-      });
-
-      clearTimeout(timeoutMap[deviceId]);
-      timeoutMap[deviceId] = setTimeout(async () => {
-        const userDevice = await UserDevice.findOneAndUpdate(
-          { deviceId },
-          { $set: { lastSeen: new Date().toISOString() } },
-          { new: true }
-        );
-        const deviceOwnerEmail = userDevice?.email;
-        console.log(
-          "Device went offline: 🐦‍🔥🧨",
-          deviceId,
-          new Date().toISOString(),
-          userDevice
-        );
-        const offlineMessage = JSON.stringify({
-          event: "device_status",
-          source: {
-            type: "hardware",
-            id: deviceId,
-            status: false,
-            lastSeen: new Date().toISOString(),
-          },
-          timestamp: new Date(),
-        });
-
-        wss.clients.forEach((client) => {
-          if (
-            client.readyState === WebSocket.OPEN &&
-            client.clientType !== deviceId &&
-            client.clientType === "web_app"
-          ) {
-            if (client.isAdmin || client.userEmail === deviceOwnerEmail) {
-              client.send(offlineMessage);
-              console.log(
-                "Sending offline message to client:",
-                client.userEmail
-              );
-            }
-          }
-        });
-      }, 30000);
+      // Reset online status and timeout
+      await setDeviceOnline(deviceId, wss, timeoutMap);
     });
 
     ws.on("close", () => {
