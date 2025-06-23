@@ -125,61 +125,61 @@ function initWebSocketServer() {
                 }
               });
 
-              const currentTime = new Date().toISOString();
+              // const currentTime = new Date().toISOString();
 
-              // Verify device exists in AdminDevice
-              const adminDevice = await AdminDevice.findOne({ deviceId });
-              if (!adminDevice) {
-                console.log(`Unknown device ping: ${deviceId}`);
-                return;
-              }
+              // // Verify device exists in AdminDevice
+              // const adminDevice = await AdminDevice.findOne({ deviceId });
+              // if (!adminDevice) {
+              //   console.log(`Unknown device ping: ${deviceId}`);
+              //   return;
+              // }
 
-              // Update lastSeen for UserDevice if assigned
-              const userDevice = await UserDevice.findOneAndUpdate(
-                { deviceId },
-                { $set: { lastSeen: null } },
-                { new: true }
-              );
-              const deviceOwnerEmail = userDevice?.email;
+              // // Update lastSeen for UserDevice if assigned
+              // const userDevice = await UserDevice.findOneAndUpdate(
+              //   { deviceId },
+              //   { $set: { lastSeen: null } },
+              //   { new: true }
+              // );
+              // const deviceOwnerEmail = userDevice?.email;
 
-              const deviceState = await UserDeviceState.findOne({
-                DeviceID: deviceId,
-              });
-              deviceState.Power = true;
-              await deviceState.save();
+              // const deviceState = await UserDeviceState.findOne({
+              //   DeviceID: deviceId,
+              // });
+              // deviceState.Power = true;
+              // await deviceState.save();
 
-              const message = JSON.stringify({
-                event: "ping_received",
-                source: { type: "hardware", id: deviceId },
-                timestamp: currentTime,
-              });
-              console.log("wss clients count:", wss.clients.size);
+              // const message = JSON.stringify({
+              //   event: "ping_received",
+              //   source: { type: "hardware", id: deviceId },
+              //   timestamp: currentTime,
+              // });
+              // console.log("wss clients count:", wss.clients.size);
 
-              wss.clients.forEach((client) => {
-                console.log(
-                  "Ping received from device: 💦💧",
-                  deviceId,
-                  client.userEmail,
-                  deviceOwnerEmail,
-                  client.clientType,
-                  client.isAdmin
-                );
+              // wss.clients.forEach((client) => {
+              //   console.log(
+              //     "Ping received from device: 💦💧",
+              //     deviceId,
+              //     client.userEmail,
+              //     deviceOwnerEmail,
+              //     client.clientType,
+              //     client.isAdmin
+              //   );
 
-                if (
-                  client.readyState === WebSocket.OPEN &&
-                  client.clientType !== deviceId &&
-                  client.clientType === "web_app"
-                ) {
-                  // Send to admins or user who own the device
-                  if (client.isAdmin || client.userEmail === deviceOwnerEmail) {
-                    console.log(
-                      "Sending ping message to client:",
-                      client.userEmail
-                    );
-                    client.send(message);
-                  }
-                }
-              });
+              //   if (
+              //     client.readyState === WebSocket.OPEN &&
+              //     client.clientType !== deviceId &&
+              //     client.clientType === "web_app"
+              //   ) {
+              //     // Send to admins or user who own the device
+              //     if (client.isAdmin || client.userEmail === deviceOwnerEmail) {
+              //       console.log(
+              //         "Sending ping message to client:",
+              //         client.userEmail
+              //       );
+              //       client.send(message);
+              //     }
+              //   }
+              // });
               break;
             case "info":
               infoDataHandler(ws, wss.clients, data?.Param);
