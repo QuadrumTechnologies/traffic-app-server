@@ -1,3 +1,4 @@
+const { WebSocket } = require("ws");
 const { UserDeviceState, UserDevice } = require("../models/appModel");
 const catchAsync = require("../utils/catchAsync");
 
