@@ -89,7 +89,7 @@ exports.intersectionControlRequestHandler = catchAsync(
               "Device powered off:",
               payload.DeviceID,
               new Date().toISOString(),
-              device
+              userDevice
             );
 
             const offlineMessage = JSON.stringify({
