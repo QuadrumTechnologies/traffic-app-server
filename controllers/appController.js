@@ -411,9 +411,19 @@ exports.editPatternByUserHandler = catchAsync(async (req, res) => {
   const { patternName } = req.params;
   const { configuredPhases } = req.body;
 
+  const newConfiguredPhases = configuredPhases.map((phase, index) => ({
+    name: phase.name,
+    phaseId: phase.phaseId,
+    signalString: phase.signalString,
+    duration: phase.duration,
+    index,
+    _id: phase.phaseId,
+    deviceId,
+  }));
+
   const patternToUpdate = await UserPattern.findOneAndUpdate(
     { email: req.user.email, "patterns.name": patternName },
-    { $set: { "patterns.$.configuredPhases": configuredPhases } },
+    { $set: { "patterns.$.configuredPhases": newConfiguredPhases } },
     { new: true }
   );
 
