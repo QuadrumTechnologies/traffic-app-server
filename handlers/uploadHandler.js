@@ -22,6 +22,7 @@ exports.numToDay = {
 };
 
 exports.uploadRequestHandler = catchAsync(async (ws, clients, payload) => {
+  console.log("Received upload request:", payload);
   try {
     if (!payload.email || !payload.patternName || !payload.DeviceID) {
       clients.forEach((client) => {
@@ -69,37 +70,76 @@ exports.uploadRequestHandler = catchAsync(async (ws, clients, payload) => {
       return;
     }
 
-    const patternPhases = pattern.configuredPhases.map((phase) => ({
-      PhaseName: phase.name,
-      PhaseId: phase.phaseId,
-      SignalString: phase.signalString,
-      Duration: phase.duration,
-    }));
-
-    const patternSettings = {
-      BlinkEnabled: pattern.blinkEnabled,
-      BlinkTimeRedToGreen: pattern.blinkTimeRedToGreen,
-      BlinkTimeGreenToRed: pattern.blinkTimeGreenToRed,
-      AmberEnabled: pattern.amberEnabled,
-      AmberDurationRedToGreen: pattern.amberDurationRedToGreen,
-      AmberDurationGreenToRed: pattern.amberDurationGreenToRed,
-    };
-
     let patternString = "";
-    patternPhases.forEach((phase) => {
-      patternString += `*${phase.Duration == 0 ? "X" : phase.Duration}${
-        phase.SignalString
+    pattern.configuredPhases.forEach((phase, index) => {
+      // Add main phase
+      patternString += `*${phase.duration == 0 ? "X" : phase.duration}${
+        phase.signalString
       }\n`;
-      if (patternSettings.BlinkEnabled) {
-        let blinkCount = patternSettings.BlinkTimeGreenToRed;
-        for (let i = 0; i < blinkCount; i++) {
-          const blinkSignalString = phase.SignalString.replace(/G/g, "X");
-          patternString += `*X${blinkSignalString}\n`;
-          patternString += `*X${phase.SignalString}\n`;
+
+      // Handle transitions to next phase (if not the last phase)
+      if (index < pattern.configuredPhases.length - 1) {
+        const nextPhase = pattern.configuredPhases[index + 1];
+        const currentSignals = phase.signalString.slice(1, -1); // Remove * and #
+        const nextSignals = nextPhase.signalString.slice(1, -1);
+
+        // Generate transition signals
+        if (phase.enableBlink) {
+          const maxBlinkDelay = Math.max(
+            phase.redToGreenDelay,
+            phase.greenToRedDelay
+          );
+          const blinkCycles = Math.ceil(maxBlinkDelay / 0.5);
+          for (let i = 0; i < blinkCycles; i++) {
+            let blinkSignalString = "";
+            for (let j = 0; j < currentSignals.length; j++) {
+              const currentState = currentSignals[j];
+              const nextState = nextSignals[j];
+              if (currentState === "G" && nextState === "R") {
+                blinkSignalString += i % 2 === 0 ? "G" : "X";
+              } else if (currentState === "R" && nextState === "G") {
+                blinkSignalString += i % 2 === 0 ? "R" : "X";
+              } else {
+                blinkSignalString += currentState;
+              }
+            }
+            patternString += `*X*${blinkSignalString}#\n`;
+          }
         }
-        if (patternSettings.AmberEnabled) {
-          const amberSignalString = phase.SignalString.replace(/G/g, "A");
-          patternString += `*${patternSettings.AmberDurationGreenToRed}${amberSignalString}\n`;
+
+        if (phase.enableAmber) {
+          const maxAmberDelay = Math.max(
+            phase.redToGreenAmberDelay,
+            phase.greenToRedAmberDelay
+          );
+          const amberCycles = phase.enableAmberBlink
+            ? Math.ceil(maxAmberDelay / 0.5)
+            : 1;
+          for (let i = 0; i < amberCycles; i++) {
+            let amberSignalString = "";
+            for (let j = 0; j < currentSignals.length; j++) {
+              const currentState = currentSignals[j];
+              const nextState = nextSignals[j];
+              if (currentState === "G" && nextState === "R") {
+                amberSignalString +=
+                  phase.enableAmberBlink && i % 2 === 0 ? "A" : "X";
+              } else if (currentState === "R" && nextState === "G") {
+                amberSignalString +=
+                  phase.enableAmberBlink && i % 2 === 0 ? "A" : "X";
+              } else {
+                amberSignalString +=
+                  phase.holdRedSignalOnAmber && currentState === "R"
+                    ? "R"
+                    : phase.holdGreenSignalOnAmber && currentState === "G"
+                    ? "G"
+                    : currentState;
+              }
+            }
+            const duration = phase.enableAmberBlink
+              ? "X"
+              : Math.round(maxAmberDelay);
+            patternString += `*${duration}*${amberSignalString}#\n`;
+          }
         }
       }
     });
@@ -142,7 +182,12 @@ exports.uploadRequestHandler = catchAsync(async (ws, clients, payload) => {
         client.send(
           JSON.stringify({
             event: "upload_request_success",
-            message: `Upload request for pattern '${payload.patternName}' sent to device ${payload.DeviceID}.`,
+            payload: {
+              DeviceID: payload.DeviceID,
+              Plan: payload.plan,
+              Period: payload.timeSegmentString,
+              message: `Upload request for pattern '${payload.patternName}' sent to device ${payload.DeviceID}.`,
+            },
           })
         );
       }
@@ -174,7 +219,7 @@ exports.uploadHandler = catchAsync(async (ws, clients, payload) => {
             event: "upload_feedback",
             payload: {
               DeviceID,
-              Plan: exports.numToDay[Plan],
+              Plan: exports.numToDay[Plan] || Plan,
               Period: modifiedPeriod,
             },
           })
@@ -183,5 +228,21 @@ exports.uploadHandler = catchAsync(async (ws, clients, payload) => {
     });
   } catch (error) {
     console.error("Error in uploadHandler:", error);
+    clients.forEach((client) => {
+      if (client.clientType !== DeviceID) {
+        client.send(
+          JSON.stringify({
+            event: "upload_feedback",
+            payload: {
+              DeviceID: payload?.DeviceID,
+              Plan: payload?.Plan,
+              Period: payload?.Period?.slice(1, 6),
+              error: true,
+              message: "An unexpected error occurred during upload feedback.",
+            },
+          })
+        );
+      }
+    });
   }
 });

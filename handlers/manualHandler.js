@@ -28,6 +28,21 @@ exports.manualControlHandler = catchAsync(async (ws, clients, payload) => {
 
     const phaseSignal = `*X${initialSignalStrings}`;
 
+    clients.forEach((client) => {
+      if (client.clientType === payload.DeviceID) {
+        client.send(
+          JSON.stringify({
+            Event: "ctrl",
+            Type: "sign",
+            Param: {
+              DeviceID: payload.DeviceID,
+              Phase: phaseSignal,
+            },
+          })
+        );
+      }
+    });
+
     setTimeout(() => {
       if (blinkEnabled) {
         const blinkIterations = 2 * blinkTimeGreenToRed;
@@ -41,16 +56,18 @@ exports.manualControlHandler = catchAsync(async (ws, clients, payload) => {
           }
           setTimeout(() => {
             clients.forEach((client) => {
-              client.send(
-                JSON.stringify({
-                  Event: "ctrl",
-                  Type: "sign",
-                  Param: {
-                    DeviceID: payload.DeviceID,
-                    Phase: blinkPhase,
-                  },
-                })
-              );
+              if (client.clientType === payload.DeviceID) {
+                client.send(
+                  JSON.stringify({
+                    Event: "ctrl",
+                    Type: "sign",
+                    Param: {
+                      DeviceID: payload.DeviceID,
+                      Phase: blinkPhase,
+                    },
+                  })
+                );
+              }
             });
           }, i * blinkInterval);
         }
@@ -62,16 +79,18 @@ exports.manualControlHandler = catchAsync(async (ws, clients, payload) => {
               "A"
             )}`;
             clients.forEach((client) => {
-              client.send(
-                JSON.stringify({
-                  Event: "ctrl",
-                  Type: "sign",
-                  Param: {
-                    DeviceID: payload.DeviceID,
-                    Phase: amberPhase,
-                  },
-                })
-              );
+              if (client.clientType === payload.DeviceID) {
+                client.send(
+                  JSON.stringify({
+                    Event: "ctrl",
+                    Type: "sign",
+                    Param: {
+                      DeviceID: payload.DeviceID,
+                      Phase: amberPhase,
+                    },
+                  })
+                );
+              }
             });
           }
         }, blinkIterations * blinkInterval);
@@ -79,16 +98,18 @@ exports.manualControlHandler = catchAsync(async (ws, clients, payload) => {
         setTimeout(() => {
           const newPhaseSignal = `*${duration}${signalString}`;
           clients.forEach((client) => {
-            client.send(
-              JSON.stringify({
-                Event: "ctrl",
-                Type: "sign",
-                Param: {
-                  DeviceID: payload.DeviceID,
-                  Phase: newPhaseSignal,
-                },
-              })
-            );
+            if (client.clientType === payload.DeviceID) {
+              client.send(
+                JSON.stringify({
+                  Event: "ctrl",
+                  Type: "sign",
+                  Param: {
+                    DeviceID: payload.DeviceID,
+                    Phase: newPhaseSignal,
+                  },
+                })
+              );
+            }
           });
         }, blinkIterations * blinkInterval + amberDurationGreenToRed * 1000);
       } else if (amberEnabled) {
@@ -97,21 +118,41 @@ exports.manualControlHandler = catchAsync(async (ws, clients, payload) => {
           "A"
         )}`;
         clients.forEach((client) => {
-          client.send(
-            JSON.stringify({
-              Event: "ctrl",
-              Type: "sign",
-              Param: {
-                DeviceID: payload.DeviceID,
-                Phase: amberPhase,
-              },
-            })
-          );
+          if (client.clientType === payload.DeviceID) {
+            client.send(
+              JSON.stringify({
+                Event: "ctrl",
+                Type: "sign",
+                Param: {
+                  DeviceID: payload.DeviceID,
+                  Phase: amberPhase,
+                },
+              })
+            );
+          }
         });
 
         setTimeout(() => {
           const newPhaseSignal = `*${duration}${signalString}`;
           clients.forEach((client) => {
+            if (client.clientType === payload.DeviceID) {
+              client.send(
+                JSON.stringify({
+                  Event: "ctrl",
+                  Type: "sign",
+                  Param: {
+                    DeviceID: payload.DeviceID,
+                    Phase: newPhaseSignal,
+                  },
+                })
+              );
+            }
+          });
+        }, amberDurationGreenToRed * 1000);
+      } else {
+        const newPhaseSignal = `*${duration}${signalString}`;
+        clients.forEach((client) => {
+          if (client.clientType === payload.DeviceID) {
             client.send(
               JSON.stringify({
                 Event: "ctrl",
@@ -122,21 +163,7 @@ exports.manualControlHandler = catchAsync(async (ws, clients, payload) => {
                 },
               })
             );
-          });
-        }, amberDurationGreenToRed * 1000);
-      } else {
-        const newPhaseSignal = `*${duration}${signalString}`;
-        clients.forEach((client) => {
-          client.send(
-            JSON.stringify({
-              Event: "ctrl",
-              Type: "sign",
-              Param: {
-                DeviceID: payload.DeviceID,
-                Phase: newPhaseSignal,
-              },
-            })
-          );
+          }
         });
       }
     }, 1000);

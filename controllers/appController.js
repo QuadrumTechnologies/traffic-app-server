@@ -130,9 +130,9 @@ exports.getAllDeviceByUserHandler = catchAsync(async (req, res, next) => {
 
 exports.addPhaseByUserHandler = catchAsync(async (req, res, next) => {
   console.log("Adding Phase by user", req.body);
-  const { phaseName, phaseData, deviceId } = req.body;
+  const { phase } = req.body;
 
-  if (!deviceId) {
+  if (!phase.deviceId) {
     return res.status(400).json({
       status: "error",
       message: "Device ID is required.",
@@ -142,17 +142,16 @@ exports.addPhaseByUserHandler = catchAsync(async (req, res, next) => {
   const userPhase = await UserPhase.findOne({ email: req.user.email });
   if (userPhase) {
     const existingPhase = userPhase.phases.find(
-      (phase) => phase.name === phaseName && phase.deviceId === deviceId
+      (p) => p.name === phase.name && p.deviceId === phase.deviceId
     );
     if (existingPhase) {
       return res.status(400).json({
         status: "error",
-        message: `Phase '${phaseName}' already exists for device ${deviceId}.`,
+        message: `Phase '${phase.name}' already exists for device ${phase.deviceId}.`,
       });
     }
   }
 
-  const phase = { name: phaseName, data: phaseData, deviceId };
   const updatedPhase = await UserPhase.findOneAndUpdate(
     { email: req.user.email },
     { $push: { phases: phase } },
@@ -161,7 +160,7 @@ exports.addPhaseByUserHandler = catchAsync(async (req, res, next) => {
 
   res.status(201).json({
     status: "success",
-    message: `Phase '${phaseName}' added successfully for device ${deviceId}.`,
+    message: `Phase '${phase.name}' added successfully for device ${phase.deviceId}.`,
     data: updatedPhase.phases[updatedPhase.phases.length - 1],
   });
 });
@@ -239,19 +238,7 @@ exports.deleteAllPhasesByUserHandler = catchAsync(async (req, res) => {
 });
 
 exports.addPatternByUserHandler = catchAsync(async (req, res) => {
-  // console.log("Adding pattern by user", req.body);
-  const {
-    name,
-    configuredPhases,
-    blinkEnabled,
-    blinkTimeRedToGreen,
-    blinkTimeGreenToRed,
-    amberEnabled,
-    amberDurationRedToGreen,
-    amberDurationGreenToRed,
-    deviceId,
-  } = req.body;
-
+  const { name, configuredPhases, deviceId } = req.body;
   if (!deviceId) {
     return res.status(400).json({
       status: "error",
@@ -281,18 +268,13 @@ exports.addPatternByUserHandler = catchAsync(async (req, res) => {
 
   const pattern = {
     name,
-    blinkEnabled,
-    blinkTimeRedToGreen,
-    blinkTimeGreenToRed,
-    amberEnabled,
-    amberDurationRedToGreen,
-    amberDurationGreenToRed,
     configuredPhases: configuredPhases.map((phase, index) => ({
       name: phase.name,
       phaseId: phase.id,
       signalString: phase.signalString,
       duration: phase.duration,
-      id: index,
+      index: index,
+      _id: phase.phaseId,
       deviceId,
     })),
     deviceId,
@@ -311,9 +293,10 @@ exports.addPatternByUserHandler = catchAsync(async (req, res) => {
 });
 
 exports.getAllPatternsByUserHandler = catchAsync(async (req, res, next) => {
-  // console.log("Getting all patterns by user", req.user);
-  const userPatterns = await UserPattern.findOne({ email: req.user.email });
+  const email = req.user.email;
 
+  // Fetch all user patterns
+  const userPatterns = await UserPattern.findOne({ email });
   if (!userPatterns || userPatterns.patterns.length === 0) {
     return res.status(200).json({
       status: "success",
@@ -322,22 +305,46 @@ exports.getAllPatternsByUserHandler = catchAsync(async (req, res, next) => {
     });
   }
 
-  const populatedPatterns = userPatterns.patterns.map((pattern) => ({
-    name: pattern.name,
-    blinkEnabled: pattern.blinkEnabled,
-    blinkTimeRedToGreen: pattern.blinkTimeRedToGreen,
-    blinkTimeGreenToRed: pattern.blinkTimeGreenToRed,
-    amberEnabled: pattern.amberEnabled,
-    amberDurationRedToGreen: pattern.amberDurationRedToGreen,
-    amberDurationGreenToRed: pattern.amberDurationGreenToRed,
-    configuredPhases: pattern.configuredPhases.map((phase) => ({
-      name: phase.name,
-      phaseId: phase.phaseId,
-      signalString: phase.signalString,
-      duration: phase.duration,
-      id: phase.id,
-    })),
-  }));
+  // Fetch all phases for this user
+  const userPhasesDoc = await UserPhase.findOne({ email });
+  const userPhases = userPhasesDoc?.phases || [];
+
+  // Helper to find phase details
+  const findPhaseDetails = (phaseId) => {
+    return userPhases.find((phase) => String(phase._id) === String(phaseId));
+  };
+
+  const populatedPatterns = userPatterns.patterns.map((pattern) => {
+    const populatedPhases = pattern.configuredPhases.map((phase) => {
+      const fullPhaseDetails = findPhaseDetails(phase.id);
+      return {
+        name: phase.name,
+        phaseId: phase.phaseId,
+        signalString: phase.signalString,
+        duration: phase.duration,
+        id: phase.id,
+        index: phase.index,
+        deviceId: phase.deviceId,
+        ...(fullPhaseDetails && {
+          enableBlink: fullPhaseDetails.enableBlink,
+          redToGreenDelay: fullPhaseDetails.redToGreenDelay,
+          greenToRedDelay: fullPhaseDetails.greenToRedDelay,
+          enableAmber: fullPhaseDetails.enableAmber,
+          enableAmberBlink: fullPhaseDetails.enableAmberBlink,
+          redToGreenAmberDelay: fullPhaseDetails.redToGreenAmberDelay,
+          greenToRedAmberDelay: fullPhaseDetails.greenToRedAmberDelay,
+          holdRedSignalOnAmber: fullPhaseDetails.holdRedSignalOnAmber,
+          holdGreenSignalOnAmber: fullPhaseDetails.holdGreenSignalOnAmber,
+        }),
+      };
+    });
+
+    return {
+      name: pattern.name,
+      deviceId: pattern.deviceId,
+      configuredPhases: populatedPhases,
+    };
+  });
 
   res.status(200).json({
     status: "success",
@@ -401,7 +408,6 @@ exports.deleteAllPatternsByUserHandler = catchAsync(async (req, res) => {
 });
 
 exports.editPatternByUserHandler = catchAsync(async (req, res) => {
-  console.log("Editing pattern by user", req.params, req.body);
   const { patternName } = req.params;
   const { configuredPhases } = req.body;
 

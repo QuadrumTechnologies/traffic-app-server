@@ -45,6 +45,15 @@ const userPhaseSchema = new Schema({
       name: { type: String, required: true },
       data: { type: String, required: true },
       deviceId: { type: String, required: true },
+      enableBlink: { type: Boolean, default: false },
+      redToGreenDelay: { type: Number, min: 0, max: 5, default: 0 },
+      greenToRedDelay: { type: Number, min: 0, max: 5, default: 0 },
+      enableAmber: { type: Boolean, default: true },
+      enableAmberBlink: { type: Boolean, default: false },
+      redToGreenAmberDelay: { type: Number, min: 0, max: 5, default: 0 },
+      greenToRedAmberDelay: { type: Number, min: 0, max: 5, default: 0 },
+      holdRedSignalOnAmber: { type: Boolean, default: false },
+      holdGreenSignalOnAmber: { type: Boolean, default: false },
     },
   ],
 });
@@ -54,19 +63,14 @@ const userPatternSchema = new Schema({
   patterns: [
     {
       name: { type: String, required: true },
-      blinkEnabled: { type: Boolean, default: false },
-      blinkTimeRedToGreen: { type: Number, min: 1, max: 5, default: 1 },
-      blinkTimeGreenToRed: { type: Number, min: 1, max: 5, default: 2 },
-      amberEnabled: { type: Boolean, default: true },
-      amberDurationRedToGreen: { type: Number, min: 1, max: 5, default: 3 },
-      amberDurationGreenToRed: { type: Number, min: 1, max: 5, default: 3 },
       configuredPhases: [
         {
           name: { type: String, required: true },
           phaseId: { type: String, required: true },
           signalString: { type: String, required: true },
           duration: { type: Number, required: true },
-          id: { type: Number, required: true },
+          index: { type: Number, required: true },
+          _id: { type: String, required: true },
           deviceId: { type: String, required: true },
         },
       ],
