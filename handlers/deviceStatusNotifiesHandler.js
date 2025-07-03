@@ -4,7 +4,12 @@ const catchAsync = require("../utils/catchAsync");
 
 const setDeviceOffline = catchAsync(async (deviceId, wss, timeoutMap) => {
   const currentTime = new Date().toISOString();
-
+  console.log(
+    "🐦‍🔥🐦‍🔥 Setting device offline:",
+    deviceId,
+    "at",
+    currentTime
+  );
   try {
     const deviceState = await UserDeviceState.findOne({ DeviceID: deviceId });
     if (deviceState) {
@@ -38,7 +43,11 @@ const setDeviceOffline = catchAsync(async (deviceId, wss, timeoutMap) => {
       ) {
         if (client.isAdmin || client.userEmail === deviceOwnerEmail) {
           client.send(offlineMessage);
-          console.log("Sent offline message to client:", client.userEmail);
+          console.log(
+            "Sent offline message to client:",
+            client.userEmail,
+            userDevice.lastSeen
+          );
         }
       }
     });
