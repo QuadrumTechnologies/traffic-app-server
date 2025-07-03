@@ -83,64 +83,8 @@ exports.uploadRequestHandler = catchAsync(async (ws, clients, payload) => {
         const currentSignals = phase.signalString.slice(1, -1); // Remove * and #
         const nextSignals = nextPhase.signalString.slice(1, -1);
 
-        // Generate transition signals
-        if (phase.enableBlink) {
-          const maxBlinkDelay = Math.max(
-            phase.redToGreenDelay,
-            phase.greenToRedDelay
-          );
-          const blinkCycles = Math.ceil(maxBlinkDelay / 0.5);
-          for (let i = 0; i < blinkCycles; i++) {
-            let blinkSignalString = "";
-            for (let j = 0; j < currentSignals.length; j++) {
-              const currentState = currentSignals[j];
-              const nextState = nextSignals[j];
-              if (currentState === "G" && nextState === "R") {
-                blinkSignalString += i % 2 === 0 ? "G" : "X";
-              } else if (currentState === "R" && nextState === "G") {
-                blinkSignalString += i % 2 === 0 ? "R" : "X";
-              } else {
-                blinkSignalString += currentState;
-              }
-            }
-            patternString += `*X*${blinkSignalString}#\n`;
-          }
-        }
-
-        if (phase.enableAmber) {
-          const maxAmberDelay = Math.max(
-            phase.redToGreenAmberDelay,
-            phase.greenToRedAmberDelay
-          );
-          const amberCycles = phase.enableAmberBlink
-            ? Math.ceil(maxAmberDelay / 0.5)
-            : 1;
-          for (let i = 0; i < amberCycles; i++) {
-            let amberSignalString = "";
-            for (let j = 0; j < currentSignals.length; j++) {
-              const currentState = currentSignals[j];
-              const nextState = nextSignals[j];
-              if (currentState === "G" && nextState === "R") {
-                amberSignalString +=
-                  phase.enableAmberBlink && i % 2 === 0 ? "A" : "X";
-              } else if (currentState === "R" && nextState === "G") {
-                amberSignalString +=
-                  phase.enableAmberBlink && i % 2 === 0 ? "A" : "X";
-              } else {
-                amberSignalString +=
-                  phase.holdRedSignalOnAmber && currentState === "R"
-                    ? "R"
-                    : phase.holdGreenSignalOnAmber && currentState === "G"
-                    ? "G"
-                    : currentState;
-              }
-            }
-            const duration = phase.enableAmberBlink
-              ? "X"
-              : Math.round(maxAmberDelay);
-            patternString += `*${duration}*${amberSignalString}#\n`;
-          }
-        }
+        // Generate transition based on phase configuration
+        generateTransition(currentSignals, nextSignals, phase, patternString);
       }
     });
 
@@ -206,6 +150,163 @@ exports.uploadRequestHandler = catchAsync(async (ws, clients, payload) => {
     });
   }
 });
+
+function generateTransition(currentSignals, nextSignals, phase, patternString) {
+  // Phase 1: Blink Phase (if enabled)
+  if (phase.enableBlink) {
+    // Determine which signals need to blink and their durations
+    for (let i = 0; i < currentSignals.length; i++) {
+      const currentState = currentSignals[i];
+      const nextState = nextSignals[i];
+
+      let blinkDuration = 0;
+      let shouldBlink = false;
+
+      // Determine blink duration based on transition type
+      if (currentState === "G" && nextState === "R") {
+        blinkDuration = phase.greenToRedDelay || 0;
+        shouldBlink = blinkDuration > 0;
+      } else if (currentState === "R" && nextState === "G") {
+        blinkDuration = phase.redToGreenDelay || 0;
+        shouldBlink = blinkDuration > 0;
+      }
+
+      if (shouldBlink) {
+        // Create blink cycles (0.5s intervals)
+        const blinkCycles = Math.ceil(blinkDuration / 0.5);
+
+        for (let cycle = 0; cycle < blinkCycles; cycle++) {
+          let blinkSignalString = "";
+
+          for (let j = 0; j < currentSignals.length; j++) {
+            const currentSignal = currentSignals[j];
+            const nextSignal = nextSignals[j];
+
+            if (j === i && shouldBlink) {
+              // This is the signal that should blink
+              if (
+                (currentSignal === "G" && nextSignal === "R") ||
+                (currentSignal === "R" && nextSignal === "G")
+              ) {
+                blinkSignalString += cycle % 2 === 0 ? currentSignal : "X";
+              } else {
+                blinkSignalString += currentSignal;
+              }
+            } else {
+              // Keep other signals as they are
+              blinkSignalString += currentSignal;
+            }
+          }
+
+          patternString += `*X*${blinkSignalString}#\n`;
+        }
+      }
+    }
+  }
+
+  // Phase 2: Amber Phase (if enabled)
+  if (phase.enableAmber) {
+    // Determine amber duration based on transition type
+    for (let i = 0; i < currentSignals.length; i++) {
+      const currentState = currentSignals[i];
+      const nextState = nextSignals[i];
+
+      let amberDuration = 0;
+      let shouldShowAmber = false;
+
+      if (currentState === "G" && nextState === "R") {
+        amberDuration = phase.greenToRedAmberDelay || 0;
+        shouldShowAmber = amberDuration > 0;
+      } else if (currentState === "R" && nextState === "G") {
+        amberDuration = phase.redToGreenAmberDelay || 0;
+        shouldShowAmber = amberDuration > 0;
+      }
+
+      if (shouldShowAmber) {
+        if (phase.enableAmberBlink) {
+          // Amber blinks every 0.5s
+          const amberCycles = Math.ceil(amberDuration / 0.5);
+
+          for (let cycle = 0; cycle < amberCycles; cycle++) {
+            let amberSignalString = "";
+
+            for (let j = 0; j < currentSignals.length; j++) {
+              const currentSignal = currentSignals[j];
+              const nextSignal = nextSignals[j];
+
+              if (j === i && shouldShowAmber) {
+                // This signal should show amber
+                if (
+                  (currentSignal === "G" && nextSignal === "R") ||
+                  (currentSignal === "R" && nextSignal === "G")
+                ) {
+                  // Check if we should hold the original signal
+                  let baseSignal = "X";
+                  if (phase.holdRedSignalOnAmber && currentSignal === "R") {
+                    baseSignal = "R";
+                  } else if (
+                    phase.holdGreenSignalOnAmber &&
+                    currentSignal === "G"
+                  ) {
+                    baseSignal = "G";
+                  }
+
+                  // Add amber (blinking or steady)
+                  if (cycle % 2 === 0) {
+                    amberSignalString += baseSignal === "X" ? "A" : baseSignal;
+                  } else {
+                    amberSignalString += baseSignal;
+                  }
+                } else {
+                  amberSignalString += currentSignal;
+                }
+              } else {
+                amberSignalString += currentSignal;
+              }
+            }
+
+            patternString += `*X*${amberSignalString}#\n`;
+          }
+        } else {
+          // Amber steady (non-blinking)
+          let amberSignalString = "";
+
+          for (let j = 0; j < currentSignals.length; j++) {
+            const currentSignal = currentSignals[j];
+            const nextSignal = nextSignals[j];
+
+            if (j === i && shouldShowAmber) {
+              if (
+                (currentSignal === "G" && nextSignal === "R") ||
+                (currentSignal === "R" && nextSignal === "G")
+              ) {
+                // Check if we should hold the original signal
+                let baseSignal = "X";
+                if (phase.holdRedSignalOnAmber && currentSignal === "R") {
+                  baseSignal = "R";
+                } else if (
+                  phase.holdGreenSignalOnAmber &&
+                  currentSignal === "G"
+                ) {
+                  baseSignal = "G";
+                }
+
+                amberSignalString += baseSignal === "X" ? "A" : baseSignal;
+              } else {
+                amberSignalString += currentSignal;
+              }
+            } else {
+              amberSignalString += currentSignal;
+            }
+          }
+
+          const duration = Math.round(amberDuration);
+          patternString += `*${duration}*${amberSignalString}#\n`;
+        }
+      }
+    }
+  }
+}
 
 exports.uploadHandler = catchAsync(async (ws, clients, payload) => {
   try {
