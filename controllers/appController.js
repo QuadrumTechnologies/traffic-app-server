@@ -185,9 +185,26 @@ exports.getAllPhaseByUserHandler = catchAsync(async (req, res, next) => {
 });
 
 exports.deletePhaseByUserHandler = catchAsync(async (req, res) => {
-  // console.log("Deleting phase by user", req.params);
+  console.log("Deleting phase by user", req.params);
   const { phaseId } = req.params;
 
+  // Check if the phase is used in any pattern
+  const userPatterns = await UserPattern.findOne({ email: req.user.email });
+  if (userPatterns) {
+    const isPhaseUsed = userPatterns.patterns.some((pattern) =>
+      pattern.configuredPhases.some(
+        (phase) => String(phase.phaseId) === String(phaseId)
+      )
+    );
+    if (isPhaseUsed) {
+      return res.status(400).json({
+        status: "error",
+        message: `Cannot delete phase with ID ${phaseId} because it is currently used in one or more patterns.`,
+      });
+    }
+  }
+
+  // Proceed with deletion if no patterns reference the phase
   const updatedUser = await UserPhase.findOneAndUpdate(
     { email: req.user.email },
     { $pull: { phases: { _id: phaseId } } },
@@ -208,7 +225,7 @@ exports.deletePhaseByUserHandler = catchAsync(async (req, res) => {
 });
 
 exports.deleteAllPhasesByUserHandler = catchAsync(async (req, res) => {
-  // console.log("Deleting all phases for user", req.params);
+  console.log("Deleting all phases for user", req.params);
   const { email } = req.params;
 
   if (!email) {
@@ -218,6 +235,20 @@ exports.deleteAllPhasesByUserHandler = catchAsync(async (req, res) => {
     });
   }
 
+  // Check if any phase is used in any pattern
+  const userPatterns = await UserPattern.findOne({ email });
+  if (
+    userPatterns &&
+    userPatterns.patterns.some((pattern) => pattern.configuredPhases.length > 0)
+  ) {
+    return res.status(400).json({
+      status: "error",
+      message:
+        "Cannot delete all phases because one or more phases are currently used in patterns.",
+    });
+  }
+
+  // Proceed with deletion if no phases are used in patterns
   const updatedUser = await UserPhase.findOneAndUpdate(
     { email },
     { $set: { phases: [] } },
@@ -354,9 +385,28 @@ exports.getAllPatternsByUserHandler = catchAsync(async (req, res, next) => {
 });
 
 exports.deletePatternByUserHandler = catchAsync(async (req, res) => {
-  // console.log("Deleting pattern by user", req.params);
+  console.log("Deleting pattern by user", req.params);
   const { patternName } = req.params;
 
+  // Check if the pattern is used in any plan
+  const userPlan = await UserPlan.findOne({ email: req.user.email });
+  if (userPlan) {
+    const isPatternUsed = userPlan.plans.some((plan) =>
+      Object.values(plan.schedule).some(
+        (scheduleEntry) =>
+          scheduleEntry &&
+          scheduleEntry.value.toLowerCase() === patternName.toLowerCase()
+      )
+    );
+    if (isPatternUsed) {
+      return res.status(400).json({
+        status: "error",
+        message: `Cannot delete pattern '${patternName}' because it is currently used in one or more plans.`,
+      });
+    }
+  }
+
+  // Proceed with deletion if no plans reference the pattern
   const updatedUser = await UserPattern.findOneAndUpdate(
     { email: req.user.email },
     { $pull: { patterns: { name: patternName } } },
@@ -377,8 +427,7 @@ exports.deletePatternByUserHandler = catchAsync(async (req, res) => {
 });
 
 exports.deleteAllPatternsByUserHandler = catchAsync(async (req, res) => {
-  // console.log("Deleting all patterns for user", req.params);
-
+  console.log("Deleting all patterns for user", req.params);
   const { email } = req.params;
 
   if (!email) {
@@ -388,6 +437,22 @@ exports.deleteAllPatternsByUserHandler = catchAsync(async (req, res) => {
     });
   }
 
+  // Check if any pattern is used in any plan
+  const userPlan = await UserPlan.findOne({ email });
+  if (
+    userPlan &&
+    userPlan.plans.some((plan) =>
+      Object.keys(plan.schedule).some((key) => plan.schedule[key])
+    )
+  ) {
+    return res.status(400).json({
+      status: "error",
+      message:
+        "Cannot delete all patterns because one or more patterns are currently used in plans.",
+    });
+  }
+
+  // Proceed with deletion if no patterns are used in plans
   const updatedUser = await UserPattern.findOneAndUpdate(
     { email },
     { $set: { patterns: [] } },
