@@ -42,7 +42,7 @@ const userPhaseSchema = new Schema({
   phases: [
     {
       _id: { type: Schema.Types.ObjectId, auto: true },
-      name: { type: String, required: true },
+      name: { type: String, required: true, uppercase: true },
       data: { type: String, required: true },
       deviceId: { type: String, required: true },
       enableBlink: { type: Boolean, default: false },
@@ -62,10 +62,10 @@ const userPatternSchema = new Schema({
   email: { type: String, required: true },
   patterns: [
     {
-      name: { type: String, required: true },
+      name: { type: String, required: true, uppercase: true },
       configuredPhases: [
         {
-          name: { type: String, required: true },
+          name: { type: String, required: true, uppercase: true },
           phaseId: { type: String, required: true },
           signalString: { type: String, required: true },
           duration: { type: Number, required: true },
@@ -85,7 +85,7 @@ const userPlanSchema = new Schema(
     plans: [
       {
         id: { type: String, required: true },
-        name: { type: String, required: true },
+        name: { type: String, required: true, uppercase: true },
         dayType: { type: String, required: true },
         schedule: {
           type: Map,

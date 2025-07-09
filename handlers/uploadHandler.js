@@ -54,7 +54,7 @@ exports.uploadRequestHandler = catchAsync(async (ws, clients, payload) => {
     }
 
     const pattern = userPatterns.patterns.find(
-      (p) => p.name === payload.patternName
+      (p) => p.name.toLowerCase() === payload.patternName.toLowerCase()
     );
 
     if (!pattern) {
@@ -92,7 +92,8 @@ exports.uploadRequestHandler = catchAsync(async (ws, clients, payload) => {
       for (const phase of pattern.configuredPhases) {
         const matchedPhase = userPhaseDocs.find(
           (p) =>
-            p._id.toString() === phase._id.toString() || p.name === phase.name
+            p._id.toString() === phase._id.toString() ||
+            p.name.toLowerCase() === phase.name.toLowerCase()
         );
         if (matchedPhase) {
           patternPhases.push({

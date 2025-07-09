@@ -165,6 +165,65 @@ exports.addPhaseByUserHandler = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.updatePhaseByUserHandler = catchAsync(async (req, res, next) => {
+  console.log("Updating Phase by user", req.body);
+  const { phaseId, email } = req.params;
+  const { phase } = req.body;
+
+  if (!phase.deviceId) {
+    return res.status(400).json({
+      status: "error",
+      message: "Device ID is required.",
+    });
+  }
+
+  const userPhase = await UserPhase.findOne({ email });
+  if (!userPhase) {
+    return res.status(404).json({
+      status: "error",
+      message: "User phases not found.",
+    });
+  }
+
+  const phaseIndex = userPhase.phases.findIndex(
+    (p) => p._id.toString() === phaseId && p.deviceId === phase.deviceId
+  );
+  if (phaseIndex === -1) {
+    return res.status(404).json({
+      status: "error",
+      message: `Phase with ID ${phaseId} not found for device ${phase.deviceId}.`,
+    });
+  }
+
+  // Check for duplicate phase name (excluding the phase being updated)
+  const duplicatePhase = userPhase.phases.find(
+    (p, index) =>
+      p.name === phase.name &&
+      p.deviceId === phase.deviceId &&
+      index !== phaseIndex
+  );
+  if (duplicatePhase) {
+    return res.status(400).json({
+      status: "error",
+      message: `Phase '${phase.name}' already exists for device ${phase.deviceId}.`,
+    });
+  }
+
+  // Update the phase
+  userPhase.phases[phaseIndex] = {
+    ...userPhase.phases[phaseIndex],
+    ...phase,
+    _id: phaseId,
+  };
+  await userPhase.save();
+
+  res.status(200).json({
+    status: "success",
+    message: `Phase '${phase.name}' updated successfully for device ${phase.deviceId}.`,
+    data: userPhase.phases[phaseIndex],
+  });
+});
+
 exports.getAllPhaseByUserHandler = catchAsync(async (req, res, next) => {
   // console.log("Getting Phase by user", req.user);
   const phases = await UserPhase.findOne({ email: req.user.email });

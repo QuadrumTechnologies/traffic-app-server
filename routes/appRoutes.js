@@ -19,6 +19,7 @@ router.patch(
 
 router.post("/phases", appController.addPhaseByUserHandler);
 router.get("/phases", appController.getAllPhaseByUserHandler);
+router.patch("/phases/:phaseId/:email", appController.updatePhaseByUserHandler);
 router.delete("/phases/all/:email", appController.deleteAllPhasesByUserHandler);
 router.delete(
   "/phases/:phaseId/:email",

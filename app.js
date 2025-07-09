@@ -47,7 +47,7 @@ app.use(xss());
 
 // Limit request from the same Ip to the api routes
 const limiter = rateLimit({
-  max: 100,
+  max: 500,
   windowMs: 60 * 60 * 1000,
   message: "Too many request from this IP, please try again in an hour!",
 });
