@@ -452,9 +452,10 @@ exports.deletePatternByUserHandler = catchAsync(async (req, res) => {
   if (userPlan) {
     const isPatternUsed = userPlan.plans.some((plan) =>
       Object.values(plan.schedule).some(
-        (scheduleEntry) =>
-          scheduleEntry &&
-          scheduleEntry.value.toLowerCase() === patternName.toLowerCase()
+        (entry) =>
+          entry &&
+          entry.value &&
+          entry.value.toLowerCase() === patternName.toLowerCase()
       )
     );
     if (isPatternUsed) {
