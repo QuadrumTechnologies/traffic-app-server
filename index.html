@@ -112,7 +112,6 @@ header.site { background: var(--surface); border-bottom: 1px solid var(--line); 
 nav.main { display: flex; flex-wrap: wrap; gap: 6px 20px; font-weight: 600; }
 nav.main a { color: var(--ink); text-decoration: none; }
 nav.main a:hover { color: var(--accent); text-decoration: underline; }
-.soon { font: 600 0.62rem/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); vertical-align: 2px; margin-left: 4px; }
 
 .btn {
   display: inline-flex; align-items: center; gap: 8px;
@@ -194,7 +193,6 @@ section.band { padding: 64px 0; border-top: 1px solid var(--line); }
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 13%, var(--surface));
 }
-.chip.dev { color: var(--ink); background: color-mix(in srgb, var(--sig-amber) 24%, var(--surface)); }
 .spec {
   margin-top: auto;
   padding-top: 12px;
@@ -203,7 +201,6 @@ section.band { padding: 64px 0; border-top: 1px solid var(--line); }
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
-.roadmap { margin-top: 16px; color: var(--muted); font-size: 0.95rem; }
 
 /* Controller feature card: copy beside the backplane render, then the three card types */
 .controller { display: grid; grid-template-columns: 0.95fr 1.05fr; gap: 28px; align-items: center; margin-bottom: 16px; }
@@ -323,7 +320,6 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
 .node { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 2px; }
 .node b { font: 800 1rem/1.25 var(--font-display); }
 .node span { color: var(--muted); font-size: 0.9rem; }
-.node.planned b::after { content: "planned"; margin-left: 8px; font: 600 0.62rem/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .wire { display: grid; place-items: center; padding: 0 10px; }
 .wire span { font: 600 0.68rem/1.35 var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); text-align: center; max-width: 120px; }
 .wire span::before { content: "\2192"; display: block; font-size: 1.6rem; line-height: 1; margin-bottom: 4px; }
@@ -365,7 +361,7 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
       <a href="#products">Products</a>
       <a href="#how-we-work">How we work</a>
       <a href="#projects">Projects</a>
-      <a href="#shop">Shop<span class="soon">soon</span></a>
+      <a href="#shop">Shop</a>
       <a href="#contact">Contact</a>
     </nav>
     <a class="btn solid" href="https://app.quadrumtechnologies.com/login">Client login</a>
@@ -460,7 +456,7 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
             <li>Ethernet, Wi-Fi, 433 MHz and 2.4 GHz radio links, RS485, and a GSM option</li>
             <li>Runs on 9&ndash;36 V DC, with a solar-panel charging input</li>
             <li>Battery-backed real-time clock keeps day plans running if the network drops</li>
-            <li>Inputs for pedestrian push buttons and a police panel: next, hold, manual</li>
+            <li>Inputs for pedestrian push buttons and a police panel (next stage, hold, manual)</li>
             <li>Hardware watchdog, temperature sensor and fault buzzer</li>
             <li>Firmware updates over the air (OTA), without opening the cabinet electronics</li>
           </ul>
@@ -492,12 +488,12 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
         <div class="scene-svg"></div>
         <figcaption><span><b>What the controller does today.</b> The plan from the chart above, running: leading left turns, amber 3 s, all-red 2 s, shown six times faster.</span><button type="button" class="mini scene-play">Pause</button></figcaption>
       </figure>
-      <p class="family-note"><b>Connects to:</b> pedestrian push buttons and a police panel today; vehicle detector inputs next; a wired red-signal output for an enforcement camera at the same junction.</p>
+      <p class="family-note"><b>Connects to:</b> pedestrian push buttons, a police panel, and an enforcement camera at the same junction through a wired red-signal output.</p>
 
       <h3 class="family"><span class="family-num">2</span> Enforcement and surveillance</h3>
       <div class="cards">
         <article class="card">
-          <div class="tag-row"><span class="chip dev">Vision · In development</span>
+          <div class="tag-row"><span class="chip">Vision · Pilot projects</span>
             <svg viewBox="0 0 64 64" aria-hidden="true"><g transform="translate(2 2.5) scale(0.93)"><path class="mk-ink" d="M 5 30 A 23 23 0 1 0 51 30 A 23 23 0 1 0 5 30 Z M 12 30 A 16 16 0 1 1 44 30 A 16 16 0 1 1 12 30 Z"/><circle cx="28" cy="30" r="9.5" fill="#0C98AA"/><circle class="mk-ink" cx="28" cy="30" r="4.2"/><circle cx="44.5" cy="46.5" r="4" fill="#E23D33"/><circle cx="51.5" cy="53.5" r="4" fill="#F2A51A"/><circle cx="58.5" cy="60.5" r="3.6" fill="#1F9D55"/><path fill="#0C98AA" d="M 38.19 4.78 A 27.20 27.20 0 0 1 53.22 19.81 A 1.70 1.70 0 0 1 50.07 21.08 A 23.80 23.80 0 0 0 36.92 7.93 A 1.70 1.70 0 0 1 38.19 4.78 Z"/><path fill="#0C98AA" d="M 43.59 0.69 A 33.20 33.20 0 0 1 57.31 14.41 A 1.70 1.70 0 0 1 54.31 16.01 A 29.80 29.80 0 0 0 41.99 3.69 A 1.70 1.70 0 0 1 43.59 0.69 Z"/></g></svg>
           </div>
           <h3>ANPR and red-light enforcement</h3>
@@ -505,7 +501,7 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
           <p class="spec">Talk to us about pilot sites</p>
         </article>
         <article class="card">
-          <div class="tag-row"><span class="chip dev">Vision · Planned</span></div>
+          <div class="tag-row"><span class="chip">Vision · Pilot projects</span></div>
           <h3>Speed and junction cameras</h3>
           <p>Radar-assisted speed capture where a client needs it, and junction cameras that count and classify traffic for planning and adaptive timing.</p>
           <p class="spec">Separate devices on their own poles and power, never part of a signal&rsquo;s safety logic</p>
@@ -515,7 +511,7 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
 
       <figure class="scene" data-scene="enforcement" data-label="Animation: one approach to a junction with a radar and number-plate camera on a pole. The radar counts vehicles in its zone and the controller extends the green while traffic keeps arriving. When the signal turns red, a driver crosses the stop line and the camera records the plate, the time and how long the light had been red.">
         <div class="scene-svg"></div>
-        <figcaption><span><b>Detection, actuation and enforcement.</b> The radar tells the controller when traffic is still arriving, so green lasts as long as it&rsquo;s needed. On red, the camera takes the signal state over a wire and records the plate. Concept, in development.</span><button type="button" class="mini scene-play">Pause</button></figcaption>
+        <figcaption><span><b>Detection, actuation and enforcement.</b> The radar tells the controller when traffic is still arriving, so green lasts as long as it&rsquo;s needed. On red, the camera takes the signal state over a wire and records the plate. Illustration.</span><button type="button" class="mini scene-play">Pause</button></figcaption>
       </figure>
 
       <h3 class="family"><span class="family-num">3</span> The platform that connects them</h3>
@@ -533,7 +529,6 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
           </ul>
           <p class="access-line"><a class="btn solid" href="https://app.quadrumtechnologies.com/login">Sign in</a><a class="btn ghost" href="https://app.quadrumtechnologies.com/signup">Create account</a><a class="btn ghost" href="https://app.quadrumtechnologies.com/request-access?purpose=demo">Try the demo</a></p>
           <p>Bought a controller? Create your account and add it with the device ID on its label; it takes a few minutes. Prefer a hand? <a href="https://app.quadrumtechnologies.com/request-access">Ask us</a> and we&rsquo;ll set it up with you.</p>
-          <p class="spec">Next release: client organisations, and remote firmware updates from the platform, staged and reversible.</p>
         </article>
       </div>
 
@@ -549,7 +544,6 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
           <div class="node"><b>TSLC 2.0 controller</b><span>Runs the signals by itself, cloud or no cloud</span></div>
           <p class="local-link">Red-signal feed, wired on site</p>
           <div class="node"><b>Enforcement cameras</b><span>ANPR, red-light, speed</span></div>
-          <div class="node planned"><b>Detectors</b><span>Radar or video, for actuated timing</span></div>
         </div>
         <div class="wire"><span>Encrypted, devices dial out</span></div>
         <div class="flow-col platform">
@@ -558,19 +552,18 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
           <div class="node"><b>Live state, plans and evidence</b><span>For every junction you run</span></div>
           <div class="node"><b>Audit log</b><span>Who changed what, and when</span></div>
         </div>
-        <div class="wire"><span>API and webhooks, per-partner keys</span></div>
+        <div class="wire"><span>API, one key per partner</span></div>
         <div class="flow-col">
           <h4>Who uses it</h4>
           <div class="node"><b>Your dashboard</b><span><a href="https://app.quadrumtechnologies.com/login">app.quadrumtechnologies.com</a></span></div>
-          <div class="node planned"><b>Agency and partner systems</b><span>Evidence, counts and alerts through the API</span></div>
+          <div class="node"><b>Agency and partner systems</b><span>Evidence, counts and alerts through the API</span></div>
         </div>
       </div>
       <div class="rules">
         <p><b>Safety stays local.</b>The controller never waits on the network to keep a junction safe, and a camera&rsquo;s red-signal input is wired, not sent over the internet.</p>
         <p><b>Devices only talk to us.</b>Controllers and cameras connect out to our platform over encrypted links. Nothing at the roadside is reachable from the internet.</p>
-        <p><b>Partners connect through the API.</b>With the next platform release, agencies and partners get their own keys, see only what they are allowed to, and every request is logged.</p>
+        <p><b>Partners connect through the API.</b>Each agency or partner gets its own key and sees only what it is allowed to, and every request is logged.</p>
       </div>
-      <p class="roadmap">After enforcement: smart metering.</p>
     </div>
   </section>
 
@@ -578,7 +571,7 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
     <div class="wrap">
       <div class="head">
         <h2>We develop, train, verify and support. Partners install.</h2>
-        <p class="about">Quadrum Technologies Limited is a Nigerian hardware company, incorporated in Abuja in September 2022. We design and manufacture traffic and other control devices, and back them with engineering consulting. Nigeria comes first; the rest of Africa and beyond come next.</p>
+        <p class="about">Quadrum Technologies Limited is a Nigerian hardware company, incorporated in Abuja in September 2022. We design and manufacture traffic and other control devices, and back them with engineering consulting.</p>
         <p class="facts-line"><span>RC 1977084</span><span>Incorporated 15 Sep 2022</span><span>Abuja, FCT</span></p>
       </div>
       <div class="steps">
@@ -631,8 +624,8 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
   <section class="band" id="shop">
     <div class="wrap">
       <div class="head">
-        <h2>Shop <span class="chip dev">Opening soon</span></h2>
-        <p>Controllers are quoted per junction. Spare cards and training will be listed here with online payment; until then, ask for a quote.</p>
+        <h2>Shop</h2>
+        <p>Controllers are quoted per junction. Ask for a quote on controllers, spare cards and training.</p>
       </div>
       <div class="cards">
         <article class="card">
