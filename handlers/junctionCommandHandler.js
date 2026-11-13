@@ -292,7 +292,7 @@ async function handleCommand(ws, audience, payload) {
     return refused(ws, id, deviceId, command, `${lease.holderName} has manual control. Ask them to return it.`);
   }
   if (spec.confirm && String(payload.confirm || "").trim().toUpperCase() !== deviceId.toUpperCase()) {
-    return refused(ws, id, deviceId, command, `Type the junction ID (${deviceId}) to confirm.`);
+    return refused(ws, id, deviceId, command, `Type the device ID (${deviceId}) to confirm.`);
   }
   if (!deviceSocket(deviceId)) {
     return refused(ws, id, deviceId, command, "The controller is offline. Commands are off until it reconnects.");

@@ -446,7 +446,7 @@ exports.generateDeviceAssignmentHTML = function (firstName, deviceId) {
                   <!DOCTYPE html>
                   <html>
                   <head>
-                      <title>Device Assigned</title>
+                      <title>Controller assigned</title>
                       <style>
                           body {
                               font-family: Arial, sans-serif;
@@ -486,12 +486,13 @@ exports.generateDeviceAssignmentHTML = function (firstName, deviceId) {
                   <body>
                       <div class="container">
                           <div class="header">
-                              <h2>Device Assigned</h2>
+                              <h2>Controller assigned</h2>
                           </div>
                           <div class="content">
                               <h3>Hello ${firstName},</h3>
-                              <p>We are pleased to inform you that a device has been assigned to you.</p>
+                              <p>A Quadrum controller has been recorded under your email, so you can add it to your account.</p>
                               <p><strong>Device ID:</strong> ${deviceId}</p>
+                              <p>Sign in to the Traffic Control and Monitoring System, open <strong>Junctions</strong>, choose <strong>Add a controller</strong> and type this device ID.</p>
                               <p>If you have any questions, feel free to contact our support team.</p>
                               <p><strong>Best Regards,</strong><br>Support Team</p>
                           </div>
@@ -569,7 +570,7 @@ exports.generateAccessRequestNoticeHTML = function (r, clientUrl) {
                         ${row("Name", r.name)}
                         ${row("Email", r.email)}
                         ${row("Phone", r.phone)}
-                        ${row("Junctions bought", r.devices)}
+                        ${row("Controllers bought", r.devices)}
                         ${row("Message", r.message)}
                     </table>
                     <a href="${clientUrl}/admin/dashboard/users" class="button">Open Requests</a>

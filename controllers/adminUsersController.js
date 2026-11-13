@@ -33,7 +33,7 @@ function statusOf(user) {
 }
 
 // What a person holds: active junctions, junctions on their way out (in trash
-// or recalled, with the release date), junctions bought under their email in
+// or recalled, with the release date), controllers bought under their email in
 // this department, and how much saved timing they have.
 function emptySummary() {
   return { junctions: 0, held: [], purchases: [], library: { phases: 0, patterns: 0, plans: 0 } };
@@ -295,7 +295,7 @@ exports.sendPasswordReset = catchAsync(async (req, res) => {
 // Remove an account. Refused while the person still has active junctions.
 // Junctions in trash or recalled are released at once. Their saved timing is
 // not deleted: it moves to Quadrum's pool with the junctions. With
-// returnToStock, junctions bought under their email go back to "available".
+// returnToStock, controllers bought under their email go back to "available".
 exports.removeUser = catchAsync(async (req, res) => {
   const user = await User.findById(req.params.id);
   if (!user) {
