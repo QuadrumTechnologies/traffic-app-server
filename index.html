@@ -205,20 +205,19 @@ section.band { padding: 64px 0; border-top: 1px solid var(--line); }
 }
 .roadmap { margin-top: 16px; color: var(--muted); font-size: 0.95rem; }
 
-/* Controller feature card: copy beside the card stack */
-.controller { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 28px; margin-bottom: 16px; }
+/* Controller feature card: copy beside the backplane render, then the three card types */
+.controller { display: grid; grid-template-columns: 0.95fr 1.05fr; gap: 28px; align-items: center; margin-bottom: 16px; }
 .controller .copy { display: flex; flex-direction: column; gap: 12px; }
-.card .stack { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; align-content: start; }
-.stack li { display: grid; grid-template-columns: 10px 1fr; gap: 14px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
-.stack li::before { content: ""; border-radius: 3px; background: var(--accent); }
-.stack li.sig::before { background: linear-gradient(var(--sig-red) 0 33%, var(--sig-amber) 33% 66%, var(--sig-green) 66%); }
-.stack li.pwr::before { background: var(--muted); }
-.stack li.bp::before { background: var(--line); }
-.stack b { display: block; font: 800 1rem/1.25 var(--font-display); }
-.stack .ver { font: 600 0.72rem/1 var(--font-mono); color: var(--muted); letter-spacing: 0.06em; margin-left: 6px; }
-.stack span.d { display: block; color: var(--muted); font-size: 0.95rem; margin-top: 3px; }
 .feature-list { margin: 0; padding-left: 18px; color: var(--muted); }
 .feature-list li + li { margin-top: 5px; }
+.board-hero { margin: 0; display: grid; gap: 8px; }
+.board-hero img, .board img { width: 100%; height: auto; }
+.board-hero figcaption { font-size: 0.9rem; color: var(--muted); }
+.boards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
+.board { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 12px; align-content: start; }
+.board figcaption { display: grid; gap: 4px; color: var(--muted); font-size: 0.95rem; }
+.board b { font: 800 1.05rem/1.25 var(--font-display); color: var(--ink); }
+.ver { font: 600 0.72rem/1 var(--font-mono); color: var(--muted); letter-spacing: 0.06em; margin-left: 6px; }
 
 /* How we work */
 .about { font-size: 1.08rem; }
@@ -270,6 +269,7 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
 
 @media (max-width: 860px) {
   .hero .grid, .controller { grid-template-columns: 1fr; gap: 28px; }
+  .boards { grid-template-columns: 1fr; }
   .steps { grid-template-columns: 1fr 1fr; }
   .step:nth-child(3) { border-left: 0; }
   .step:nth-child(n+3) { border-top: 1px solid var(--line); }
@@ -407,22 +407,36 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
             <svg viewBox="0 0 64 64" aria-hidden="true"><rect class="mk-ink" x="28" y="6" width="8" height="52" rx="4"/><rect class="mk-ink" x="6" y="28" width="52" height="8" rx="4"/><circle class="mk-ink" cx="32" cy="32" r="8.5"/><circle cx="32" cy="32" r="3.6" fill="#0C98AA"/><circle cx="32" cy="7" r="6" fill="#E23D33"/><circle cx="57" cy="32" r="6" fill="#F2A51A"/><circle cx="32" cy="57" r="6" fill="#1F9D55"/><circle cx="7" cy="32" r="6" fill="#0C98AA"/></svg>
           </div>
           <h3>TSLC 2.0 junction controller</h3>
-          <p>Our current controller. Each job sits on its own plug-in card in one backplane, so a fault is cleared on site by swapping a card.</p>
+          <p>Our current controller. A backplane carries a comms card, a power card and four signal cards, one per approach, so a fault is cleared on site by swapping a card.</p>
           <ul class="feature-list">
             <li>Ethernet, Wi-Fi, 433 MHz and 2.4 GHz radio links, RS485, and a GSM option</li>
+            <li>Runs on 9&ndash;36 V DC, with a solar-panel charging input</li>
             <li>Battery-backed real-time clock keeps day plans running if the network drops</li>
             <li>Inputs for pedestrian push buttons and a police panel: next, hold, manual</li>
             <li>Hardware watchdog, temperature sensor and fault buzzer</li>
           </ul>
-          <p class="spec">Managed from the Traffic Monitoring System · supported for 24 months under warranty</p>
+          <p class="spec">Backplane v1.0 · Comms card v1.03 · Power card v1.0 · Signal card v1.03 &times;4</p>
         </div>
-        <ul class="stack" aria-label="Cards in the TSLC 2.0">
-          <li class="cpu"><div><b>Comms card<span class="ver">v1.03</span></b><span class="d">The controller's processor and every link out of the cabinet.</span></div></li>
-          <li class="sig"><div><b>Signal card<span class="ver">v1.03</span></b><span class="d">Switches the signal lamps.</span></div></li>
-          <li class="pwr"><div><b>Power card<span class="ver">v1.0</span></b><span class="d">Supplies the cards in the cabinet.</span></div></li>
-          <li class="bp"><div><b>Backplane<span class="ver">v1.0</span></b><span class="d">Joins the cards; any card lifts out without rewiring.</span></div></li>
-        </ul>
+        <figure class="board-hero">
+          <img src="assets/tslc2-backplane.webp" width="1200" height="499" alt="3D render of the TSLC 2.0 backplane: field terminals on the left, then slots for the comms card, the power card and four signal cards">
+          <figcaption>Backplane: field terminals, then slots for the comms card, the power card and four signal cards.</figcaption>
+        </figure>
       </article>
+
+      <div class="boards">
+        <figure class="board">
+          <img src="assets/tslc2-comms-card.webp" width="900" height="322" alt="3D render of the TSLC 2.0 comms card: two radio modules, a coin-cell clock battery, a rotary switch and the backplane connector" loading="lazy">
+          <figcaption><b>Comms card<span class="ver">v1.03</span></b><span>The controller&rsquo;s processor and every link out of the cabinet. A rotary switch sets the wireless channel.</span></figcaption>
+        </figure>
+        <figure class="board">
+          <img src="assets/tslc2-signal-card.webp" width="900" height="298" alt="3D render of a TSLC 2.0 signal card: lamp driver ICs, a rotary address switch and the backplane connector" loading="lazy">
+          <figcaption><b>Signal card<span class="ver">v1.03 &times;4</span></b><span>Switches the lamps for one approach. Its rotary switch sets the direction: north, east, south or west.</span></figcaption>
+        </figure>
+        <figure class="board">
+          <img src="assets/tslc2-power-card.webp" width="900" height="295" alt="3D render of the TSLC 2.0 power card: three switching regulators with inductors and the backplane connector" loading="lazy">
+          <figcaption><b>Power card<span class="ver">v1.0</span></b><span>Takes 9&ndash;36 V DC or solar charging and supplies the 12 V, 5 V and 3.3 V rails to the cards.</span></figcaption>
+        </figure>
+      </div>
 
       <div class="cards">
         <article class="card">
