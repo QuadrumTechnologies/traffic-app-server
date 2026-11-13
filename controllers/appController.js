@@ -83,6 +83,20 @@ exports.addDeviceByUserHandler = catchAsync(async (req, res, next) => {
     });
   }
 
+  // Only the buyer Quadrum assigned it to can add a junction, so nobody can
+  // claim a unit by typing its ID.
+  const sale = recognizedDevice.deviceStatus || {};
+  if (
+    sale.status !== "purchased" ||
+    String(sale.ownerEmail || "").trim().toLowerCase() !==
+      String(req.user.email).trim().toLowerCase()
+  ) {
+    return res.status(403).json({
+      status: "error",
+      message: `Junction ${deviceId} isn't assigned to ${req.user.email}. Ask Quadrum to assign it to you first.`,
+    });
+  }
+
   const secretKey = generateSecretKey();
   const newDevice = await UserDevice.create({
     deviceId,
@@ -891,14 +905,16 @@ exports.getDeviceFullDetailsByDeviceIDHandler = catchAsync(async (req, res) => {
   console.log("Getting device full details by device ID", req.params);
   const { deviceID } = req.params;
 
-  const device = await UserDevice.findOne({
-    deviceId: deviceID,
-    email: req.user.email,
-  });
+  // requireDeviceAccess has already checked the owner or the admin's department.
+  const device = req.isAdmin
+    ? await UserDevice.findOne({ deviceId: deviceID }).select("-secretKey")
+    : await UserDevice.findOne({ deviceId: deviceID, email: req.user.email });
   if (!device) {
     return res.status(404).json({
       status: "error",
-      message: `Device with ID ${deviceID} not found.`,
+      message: req.isAdmin
+        ? `Junction ${deviceID} isn't on anyone's account.`
+        : `Device with ID ${deviceID} not found.`,
     });
   }
 

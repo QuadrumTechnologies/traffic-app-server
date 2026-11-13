@@ -55,6 +55,10 @@ router.patch(
 );
 
 router.get(
+  "/devices/:deviceId/library",
+  adminAppController.getJunctionLibraryHandler
+);
+router.get(
   "/devices/:deviceDepartment",
   adminAppController.getAllDeviceByAdminHandler
 );

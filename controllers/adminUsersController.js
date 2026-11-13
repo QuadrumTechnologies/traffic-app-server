@@ -4,7 +4,16 @@ const Email = require("../utils/email");
 const User = require("../models/userModel");
 const AdminUser = require("../models/adminUserModel");
 const { UserDevice, UserPhase, UserPattern, UserPlan } = require("../models/appModel");
+const { AdminDevice } = require("../models/adminAppModel");
 const { AuditLog } = require("../models/auditModel");
+const {
+  isHeld,
+  describeLink,
+  sameEmail,
+  moveLibraryToPool,
+  returnPurchasesToStock,
+  deleteLink,
+} = require("../utils/junctionRelease");
 
 // People and roles (Users page). Quadrum admins see and manage every client
 // account; organisations come later.
@@ -23,7 +32,51 @@ function statusOf(user) {
   return "active";
 }
 
-function present(user, deviceCount) {
+// What a person holds: active junctions, junctions on their way out (in trash
+// or recalled, with the release date), junctions bought under their email in
+// this department, and how much saved timing they have.
+function emptySummary() {
+  return { junctions: 0, held: [], purchases: [], library: { phases: 0, patterns: 0, plans: 0 } };
+}
+
+async function summaries(department) {
+  const byEmail = new Map();
+  const get = (email) => {
+    const key = String(email || "").trim().toLowerCase();
+    if (!byEmail.has(key)) byEmail.set(key, emptySummary());
+    return byEmail.get(key);
+  };
+
+  const links = await UserDevice.find({}).lean();
+  links.forEach((link) => {
+    const s = get(link.email);
+    if (isHeld(link)) s.held.push(describeLink(link));
+    else s.junctions += 1;
+  });
+
+  const devices = await AdminDevice.find({ deviceDepartment: department }).lean();
+  devices.forEach((device) => {
+    const status = device.deviceStatus || {};
+    if (status.status === "purchased" && status.ownerEmail) {
+      get(status.ownerEmail).purchases.push(device.deviceId);
+    }
+  });
+
+  for (const [Model, field] of [[UserPhase, "phases"], [UserPattern, "patterns"], [UserPlan, "plans"]]) {
+    const docs = await Model.find({}).lean();
+    docs.forEach((doc) => {
+      if (String(doc.email).startsWith("pool:")) return;
+      get(doc.email).library[field] += (doc[field] || []).length;
+    });
+  }
+  return (email) => byEmail.get(String(email || "").trim().toLowerCase()) || emptySummary();
+}
+
+async function summaryFor(user, department) {
+  return (await summaries(department))(user.email);
+}
+
+function present(user, summary = emptySummary()) {
   return {
     id: String(user._id),
     name: user.name,
@@ -36,7 +89,10 @@ function present(user, deviceCount) {
     invitedBy: user.invitedBy || null,
     pausedAt: user.pausedAt || null,
     pausedBy: user.pausedBy || null,
-    junctions: deviceCount || 0,
+    junctions: summary.junctions,
+    held: summary.held,
+    purchases: summary.purchases,
+    library: summary.library,
   };
 }
 
@@ -61,16 +117,13 @@ function placeholderPassword() {
 
 exports.listUsers = catchAsync(async (req, res) => {
   const users = await User.find({}).select("+active +verified").sort({ name: 1 });
-  const counts = await UserDevice.aggregate([
-    { $group: { _id: { $toLower: "$email" }, n: { $sum: 1 } } },
-  ]);
-  const devicesByEmail = new Map(counts.map((c) => [c._id, c.n]));
+  const summaryOf = await summaries(req.user.department);
   const admins = await AdminUser.find({}).sort({ name: 1 });
 
   return res.status(200).json({
     status: "success",
     data: {
-      users: users.map((u) => present(u, devicesByEmail.get(String(u.email).toLowerCase()))),
+      users: users.map((u) => present(u, summaryOf(u.email))),
       admins: admins.map((a) => ({
         id: String(a._id),
         name: a.name,
@@ -133,7 +186,7 @@ exports.inviteUser = catchAsync(async (req, res) => {
   return res.status(201).json({
     status: "success",
     message: `Invitation sent to ${email}.`,
-    data: { user: present(saved, 0) },
+    data: { user: present(saved) },
   });
 });
 
@@ -171,16 +224,19 @@ exports.updateUser = catchAsync(async (req, res) => {
     }
   }
   if (changes.length === 0) {
-    return res.status(200).json({ status: "success", message: "Nothing to change.", data: { user: present(user) } });
+    return res.status(200).json({
+      status: "success",
+      message: "Nothing to change.",
+      data: { user: present(user, await summaryFor(user, req.user.department)) },
+    });
   }
 
   await user.save({ validateBeforeSave: false });
   await audit(req, `${user.email}: ${changes.join(", ")}`);
-  const junctions = await UserDevice.countDocuments({ email: user.email });
   return res.status(200).json({
     status: "success",
     message: `${user.name}: ${changes.join(", ")}.`,
-    data: { user: present(user, junctions) },
+    data: { user: present(user, await summaryFor(user, req.user.department)) },
   });
 });
 
@@ -222,18 +278,32 @@ exports.sendPasswordReset = catchAsync(async (req, res) => {
   });
 });
 
+// Remove an account. Refused while the person still has active junctions.
+// Junctions in trash or recalled are released at once. Their saved timing is
+// not deleted: it moves to Quadrum's pool with the junctions. With
+// returnToStock, junctions bought under their email go back to "available".
 exports.removeUser = catchAsync(async (req, res) => {
   const user = await User.findById(req.params.id);
   if (!user) {
     return res.status(404).json({ status: "error", message: "No such account." });
   }
-  const junctions = await UserDevice.countDocuments({ email: user.email });
-  if (junctions > 0) {
+  const links = (await UserDevice.find({}).lean()).filter((l) => sameEmail(l.email, user.email));
+  const active = links.filter((l) => !isHeld(l));
+  if (active.length > 0) {
+    const n = active.length;
     return res.status(409).json({
       status: "error",
-      message: `${user.name} still has ${junctions} junction${junctions === 1 ? "" : "s"}. Move or recall ${junctions === 1 ? "it" : "them"} first, or pause the account instead.`,
+      message: `${user.name} still has ${n} active junction${n === 1 ? "" : "s"} (${active
+        .map((l) => l.deviceId)
+        .join(", ")}). Recall ${n === 1 ? "it" : "them"} first, or pause the account instead.`,
     });
   }
+  const returnToStock =
+    (req.body && req.body.returnToStock === true) || req.query?.returnToStock === "1";
+
+  const kept = await moveLibraryToPool(user.email, req.user.department);
+  for (const link of links) await deleteLink(link);
+  const restocked = returnToStock ? await returnPurchasesToStock(user.email, req.user.department) : [];
 
   await Promise.all([
     UserPhase.deleteMany({ email: user.email }),
@@ -241,6 +311,34 @@ exports.removeUser = catchAsync(async (req, res) => {
     UserPlan.deleteMany({ email: user.email }),
   ]);
   await User.findByIdAndDelete(user._id);
-  await audit(req, `Removed ${user.email}`);
-  return res.status(200).json({ status: "success", message: `${user.name}'s account was removed.` });
+
+  const released = links.map((l) => l.deviceId);
+  const { phases, patterns, plans } = kept.counts;
+  const keptText =
+    phases + patterns + plans > 0
+      ? `Kept in Quadrum's pool: ${phases} phase${phases === 1 ? "" : "s"}, ${patterns} pattern${patterns === 1 ? "" : "s"}, ${plans} plan${plans === 1 ? "" : "s"}.`
+      : "";
+  await audit(
+    req,
+    [
+      `Removed ${user.email}`,
+      released.length ? `released ${released.join(", ")}` : "",
+      phases + patterns + plans > 0 ? `timing to pool (${phases}/${patterns}/${plans})` : "",
+      restocked.length ? `back in stock ${restocked.join(", ")}` : "",
+    ]
+      .filter(Boolean)
+      .join("; ")
+  );
+  return res.status(200).json({
+    status: "success",
+    message: [
+      `${user.name}'s account was removed.`,
+      released.length ? `Released ${released.join(", ")}.` : "",
+      keptText,
+      restocked.length ? `Back in stock: ${restocked.join(", ")}.` : "",
+    ]
+      .filter(Boolean)
+      .join(" "),
+    data: { released, kept: kept.counts, restocked },
+  });
 });

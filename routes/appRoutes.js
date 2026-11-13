@@ -22,6 +22,15 @@ router.get(
   appController.getDeviceStateByDeviceIDHandler
 );
 
+// Junction link details: the owner, or an admin of the junction's department
+// (without the device key).
+router.get(
+  "/user-devices/:deviceID",
+  authenticateAny,
+  requireDeviceAccess("deviceID"),
+  appController.getDeviceFullDetailsByDeviceIDHandler
+);
+
 router.use(authenticateUser);
 
 // Roles (see models/userModel.js): viewers read; operators change timing;
@@ -88,10 +97,6 @@ router.delete("/plans/:planId/:email", OPERATE, appController.deletePlanByUserHa
 
 router.post("/confirm-password", appController.confirmPasswordHandler);
 
-router.get(
-  "/user-devices/:deviceID",
-  appController.getDeviceFullDetailsByDeviceIDHandler
-);
 router.patch(
   "/user-devices/:deviceID",
   OWN,

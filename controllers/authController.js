@@ -4,6 +4,7 @@ const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const Email = require("../utils/email");
 const User = require("../models/userModel");
+const AdminUser = require("../models/adminUserModel");
 
 const signToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -85,6 +86,14 @@ exports.authenticateUser = catchAsync(async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const currentUser = await User.findById(decoded.id).select("+active");
     if (!currentUser) {
+      // A Quadrum admin's sign-in is valid, just not for client pages. Say so
+      // with 403, so the dashboard doesn't treat it as an ended session.
+      if (await AdminUser.findById(decoded.id)) {
+        return res.status(403).json({
+          status: "error",
+          message: "This is for client accounts. Quadrum admins use the admin pages.",
+        });
+      }
       return res.status(401).json({
         status: "error",
         message: "The user associated with this token no longer exists.",
