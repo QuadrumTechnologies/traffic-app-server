@@ -22,8 +22,9 @@
     if (parent) parent.appendChild(e);
     return e;
   }
-  // Keep " · " separators from collapsing in SVG text.
-  const T = (s) => String(s).replace(/ · /g, "\u00a0·\u00a0");
+  // Overpass draws "·" (U+00B7) hard against the next word; the dot
+  // operator (U+22C5) sits centred, so separators read evenly.
+  const T = (s) => String(s).replace(/ · /g, " \u22c5 ");
   function txt(parent, x, y, s, attrs) {
     const t = el("text", Object.assign({ x, y }, attrs || {}), parent);
     t.textContent = T(s);
