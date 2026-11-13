@@ -136,22 +136,24 @@ exports.listUsers = catchAsync(async (req, res) => {
   });
 });
 
-exports.inviteUser = catchAsync(async (req, res) => {
-  const name = String(req.body.name || "").trim();
-  const email = String(req.body.email || "").trim().toLowerCase();
-  const role = String(req.body.role || "operator");
+// Create an invited account and email the set-password link. Shared by the
+// Invite form and by approving an access request. Returns { statusCode, body }.
+async function inviteAccount(req, input) {
+  const name = String(input.name || "").trim();
+  const email = String(input.email || "").trim().toLowerCase();
+  const role = String(input.role || "operator");
 
   if (!name || !/^\S+@\S+\.\S+$/.test(email)) {
-    return res.status(400).json({ status: "error", message: "Enter the person's name and email address." });
+    return { statusCode: 400, body: { status: "error", message: "Enter the person's name and email address." } };
   }
   if (!ROLES.includes(role)) {
-    return res.status(400).json({ status: "error", message: "Choose a role: admin, operator or viewer." });
+    return { statusCode: 400, body: { status: "error", message: "Choose a role: admin, operator or viewer." } };
   }
   if (await User.findOne({ email })) {
-    return res.status(409).json({ status: "error", message: `${email} already has an account.` });
+    return { statusCode: 409, body: { status: "error", message: `${email} already has an account.` } };
   }
   if (await AdminUser.findOne({ email })) {
-    return res.status(409).json({ status: "error", message: `${email} is a Quadrum admin account.` });
+    return { statusCode: 409, body: { status: "error", message: `${email} is a Quadrum admin account.` } };
   }
 
   const password = placeholderPassword();
@@ -175,19 +177,31 @@ exports.inviteUser = catchAsync(async (req, res) => {
     console.error("Invite email failed:", error.message);
     await User.findByIdAndDelete(user._id);
     await audit(req, `Invite to ${email} failed: email not sent`, "failure");
-    return res.status(502).json({
-      status: "error",
-      message: `The invitation email to ${email} couldn't be sent, so no account was created. Try again later.`,
-    });
+    return {
+      statusCode: 502,
+      body: {
+        status: "error",
+        message: `The invitation email to ${email} couldn't be sent, so no account was created. Try again later.`,
+      },
+    };
   }
 
   await audit(req, `Invited ${email} as ${role}`);
   const saved = await User.findById(user._id).select("+active +verified");
-  return res.status(201).json({
-    status: "success",
-    message: `Invitation sent to ${email}.`,
-    data: { user: present(saved) },
-  });
+  return {
+    statusCode: 201,
+    body: {
+      status: "success",
+      message: `Invitation sent to ${email}.`,
+      data: { user: present(saved) },
+    },
+  };
+}
+exports.inviteAccount = inviteAccount;
+
+exports.inviteUser = catchAsync(async (req, res) => {
+  const { statusCode, body } = await inviteAccount(req, req.body || {});
+  return res.status(statusCode).json(body);
 });
 
 exports.updateUser = catchAsync(async (req, res) => {

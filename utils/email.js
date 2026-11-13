@@ -10,6 +10,9 @@ const {
   generateDeviceUnrecalledHTML,
   generateDeviceAssignmentHTML,
   generateInviteHTML,
+  generateAccessRequestNoticeHTML,
+  generateAccessRequestReceivedHTML,
+  generateAccessRequestDeclinedHTML,
 } = require("./emailTemplates");
 
 class Email {
@@ -76,7 +79,31 @@ class Email {
   async sendInvite(roleLabel) {
     await this.send(
       generateInviteHTML(this.firstName, this.url, roleLabel),
-      "Your Traffic Monitoring System account"
+      "Your Traffic Control and Monitoring System account"
+    );
+  }
+
+  // To Quadrum: someone asked for access, a demo, a quote or a partnership.
+  async sendAccessRequestNotice(request) {
+    const who = request.company || request.name || request.email || request.phone;
+    await this.send(
+      generateAccessRequestNoticeHTML(request, process.env.CLIENT_URL),
+      `Access request: ${request.purposeLabel} · ${who}`
+    );
+  }
+
+  // To the person who asked.
+  async sendAccessRequestReceived(request) {
+    await this.send(
+      generateAccessRequestReceivedHTML(this.firstName, request),
+      "We have your request · Quadrum Technologies"
+    );
+  }
+
+  async sendAccessRequestDeclined(note) {
+    await this.send(
+      generateAccessRequestDeclinedHTML(this.firstName, note),
+      "Your request · Quadrum Technologies"
     );
   }
 
