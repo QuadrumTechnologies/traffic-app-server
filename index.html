@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quadrum Technologies · Traffic signal controllers, developed in Nigeria</title>
+<meta name="description" content="Quadrum Technologies Limited develops traffic signal controllers, their communication cards and the platform that runs them. Partner contractors install; we train, verify every site and support the hardware with a 24-month warranty.">
+<link rel="canonical" href="https://quadrumtechnologies.com/">
+<meta name="theme-color" content="#08707d">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://quadrumtechnologies.com/">
+<meta property="og:site_name" content="Quadrum Technologies">
+<meta property="og:title" content="Quadrum Technologies">
+<meta property="og:description" content="Traffic signal controllers, developed in Nigeria and supported for the life of the junction.">
+<meta property="og:image" content="https://quadrumtechnologies.com/assets/og-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;800&family=Overpass+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: left-aligned engineering page. Logo + nav bar, two-column hero (copy | signal timing chart),
+   then full-width bands that stack to one column on phones. Overpass descends from Highway Gothic,
+   the road-sign face; signal red/amber/green appear only where they mean a signal state; teal is the brand. */
+:root {
+  --bg: #f3f4f1;
+  --surface: #ffffff;
+  --ink: #121821;
+  --muted: #59606b;
+  --line: #d9dcd5;
+  --accent: #08707d;
+  --sig-red: #d23b2e;
+  --sig-amber: #e9a100;
+  --sig-green: #1f9a57;
+  --font-display: "Overpass", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Overpass", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Overpass Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101317;
+    --surface: #171b21;
+    --ink: #eef2f5;
+    --muted: #a3abb5;
+    --line: #2b313a;
+    --accent: #4cc6d4;
+    --sig-red: #ec5a4c;
+    --sig-amber: #f3b42a;
+    --sig-green: #36c07a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101317;
+  --surface: #171b21;
+  --ink: #eef2f5;
+  --muted: #a3abb5;
+  --line: #2b313a;
+  --accent: #4cc6d4;
+  --sig-red: #ec5a4c;
+  --sig-amber: #f3b42a;
+  --sig-green: #36c07a;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+}
+img { max-width: 100%; height: auto; display: block; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible {
+  outline: 3px solid var(--sig-amber);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+h1, h2, h3 {
+  font-family: var(--font-display);
+  line-height: 1.12;
+  text-wrap: balance;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+h1 { font-size: clamp(2.05rem, 4.4vw, 3.2rem); font-weight: 800; }
+h2 { font-size: clamp(1.55rem, 3vw, 2.15rem); font-weight: 800; }
+h3 { font-size: 1.22rem; font-weight: 800; }
+p { margin: 0; max-width: 65ch; }
+.wrap { width: min(1120px, 100% - 32px); margin-inline: auto; }
+.muted { color: var(--muted); }
+.skip { position: absolute; left: -9999px; top: 8px; }
+.skip:focus { left: 16px; z-index: 10; background: var(--surface); padding: 8px 12px; border-radius: 6px; }
+
+/* Header */
+header.site { background: var(--surface); border-bottom: 1px solid var(--line); }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 26px; padding: 12px 0; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; margin-right: auto; }
+.brand svg { width: 40px; height: 40px; flex-shrink: 0; }
+.brand .words { display: flex; flex-direction: column; line-height: 1; }
+.brand b { font: 800 1.3rem/1 var(--font-display); letter-spacing: 0.08em; }
+.brand span { font: 600 0.62rem/1 var(--font-mono); letter-spacing: 0.36em; color: var(--muted); margin-top: 5px; }
+.mk-ink { fill: var(--ink); }
+.mk-hole { fill: var(--surface); }
+nav.main { display: flex; flex-wrap: wrap; gap: 6px 20px; font-weight: 600; }
+nav.main a { color: var(--ink); text-decoration: none; }
+nav.main a:hover { color: var(--accent); text-decoration: underline; }
+.soon { font: 600 0.62rem/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); vertical-align: 2px; margin-left: 4px; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 18px 9px;
+  border-radius: 6px;
+  border: 1.5px solid var(--accent);
+  font: 800 0.95rem/1.1 var(--font-body);
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn.solid { background: var(--accent); color: var(--surface); }
+.btn.solid:hover { background: color-mix(in srgb, var(--accent) 86%, var(--ink)); }
+.btn.ghost { background: transparent; color: var(--accent); }
+.btn.ghost:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+/* Hero */
+.hero { padding: 56px 0 52px; }
+.hero .grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: center; }
+.eyebrow { font: 600 0.78rem/1.3 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+.lede { font-size: 1.14rem; color: var(--muted); margin-top: 18px; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+
+.chart { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 18px 14px; }
+.chart svg { display: block; width: 100%; height: auto; }
+.chart text { font-family: var(--font-mono); font-size: 13px; fill: var(--ink); }
+.chart .pn { fill: var(--muted); }
+.chart .row-label.on { font-weight: 600; fill: var(--accent); }
+.chart .axis text { fill: var(--muted); font-size: 11px; }
+.chart .axis line { stroke: var(--muted); stroke-width: 1; }
+.chart .r { fill: color-mix(in srgb, var(--sig-red) 80%, var(--surface)); }
+.chart .g { fill: var(--sig-green); }
+.chart .a { fill: var(--sig-amber); }
+.chart .head line { stroke: var(--ink); stroke-width: 1.5; }
+.chart .head polygon { fill: var(--ink); }
+.chart figcaption {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px;
+  margin-top: 10px;
+  font: 400 0.78rem/1.4 var(--font-mono);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.live { display: inline-flex; align-items: center; gap: 10px; }
+.live output { color: var(--ink); font-weight: 600; white-space: pre; }
+.mini {
+  font: 600 0.72rem/1 var(--font-mono);
+  padding: 5px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.mini:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Bands */
+section.band { padding: 64px 0; border-top: 1px solid var(--line); }
+.head { display: grid; gap: 12px; margin-bottom: 30px; }
+.head p { color: var(--muted); }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 22px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.card ul { margin: 0; padding-left: 18px; color: var(--muted); }
+.card li + li { margin-top: 5px; }
+.tag-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.tag-row svg { width: 26px; height: 26px; flex-shrink: 0; }
+.chip {
+  align-self: flex-start;
+  font: 600 0.7rem/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 8px 5px;
+  border-radius: 4px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 13%, var(--surface));
+}
+.chip.dev { color: var(--ink); background: color-mix(in srgb, var(--sig-amber) 24%, var(--surface)); }
+.spec {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+  font: 400 0.8rem/1.5 var(--font-mono);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.roadmap { margin-top: 16px; color: var(--muted); font-size: 0.95rem; }
+
+/* Controller feature card: copy beside the card stack */
+.controller { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 28px; margin-bottom: 16px; }
+.controller .copy { display: flex; flex-direction: column; gap: 12px; }
+.card .stack { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; align-content: start; }
+.stack li { display: grid; grid-template-columns: 10px 1fr; gap: 14px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.stack li::before { content: ""; border-radius: 3px; background: var(--accent); }
+.stack li.sig::before { background: linear-gradient(var(--sig-red) 0 33%, var(--sig-amber) 33% 66%, var(--sig-green) 66%); }
+.stack li.pwr::before { background: var(--muted); }
+.stack li.bp::before { background: var(--line); }
+.stack b { display: block; font: 800 1rem/1.25 var(--font-display); }
+.stack .ver { font: 600 0.72rem/1 var(--font-mono); color: var(--muted); letter-spacing: 0.06em; margin-left: 6px; }
+.stack span.d { display: block; color: var(--muted); font-size: 0.95rem; margin-top: 3px; }
+.feature-list { margin: 0; padding-left: 18px; color: var(--muted); }
+.feature-list li + li { margin-top: 5px; }
+
+/* How we work */
+.about { font-size: 1.08rem; }
+.facts-line { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 6px; font: 600 0.8rem/1.5 var(--font-mono); color: var(--muted); letter-spacing: 0.04em; }
+.steps {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.step { display: grid; gap: 8px; align-content: start; padding: 22px; border-left: 1px solid var(--line); }
+.step:first-child { border-left: 0; }
+.step .n { font: 600 0.78rem/1 var(--font-mono); letter-spacing: 0.1em; color: var(--accent); }
+.step p { color: var(--muted); }
+.note {
+  margin-top: 16px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--sig-red);
+  border-radius: 8px;
+}
+.note p { max-width: none; }
+
+/* Projects */
+.photos { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.photo { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+.photo img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.photo figcaption { padding: 12px 16px; font-size: 0.92rem; color: var(--muted); }
+
+/* Shop */
+.price { font: 800 1.25rem/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.card .btn { align-self: flex-start; margin-top: auto; }
+
+/* Contact */
+.contact-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; align-items: start; }
+.email { display: inline-block; font: 800 clamp(1.25rem, 3vw, 1.85rem)/1.2 var(--font-display); overflow-wrap: anywhere; }
+.copy-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 14px; }
+.copy-status { font: 400 0.85rem/1.3 var(--font-mono); color: var(--muted); }
+dl.facts { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 10px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+dl.facts dt { font: 600 0.78rem/1.6 var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+dl.facts dd { margin: 0; overflow-wrap: anywhere; }
+
+footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted); font-size: 0.9rem; }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; }
+footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.sep::before { content: "\00B7"; margin: 0 0.55em 0 0.2em; }
+
+@media (max-width: 860px) {
+  .hero .grid, .controller { grid-template-columns: 1fr; gap: 28px; }
+  .steps { grid-template-columns: 1fr 1fr; }
+  .step:nth-child(3) { border-left: 0; }
+  .step:nth-child(n+3) { border-top: 1px solid var(--line); }
+  .contact-grid, .photos { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  nav.main { order: 3; width: 100%; gap: 4px 16px; font-size: 0.95rem; }
+}
+@media (max-width: 520px) {
+  .hero { padding-top: 40px; }
+  section.band { padding: 48px 0; }
+  .steps { grid-template-columns: 1fr; }
+  .step { border-left: 0; }
+  .step + .step { border-top: 1px solid var(--line); }
+  dl.facts { grid-template-columns: 1fr; gap: 2px 0; }
+  dl.facts dd { margin-bottom: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#products">Skip to products</a>
+
+<header class="site" id="top">
+  <div class="wrap bar">
+    <a class="brand" href="#top" aria-label="Quadrum Technologies, back to top">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <rect class="mk-ink" x="5" y="36" width="12" height="21" rx="2"/>
+        <rect class="mk-hole" x="8" y="40" width="3" height="3" rx="0.6"/><rect class="mk-hole" x="12" y="40" width="3" height="3" rx="0.6"/>
+        <rect class="mk-hole" x="8" y="46" width="3" height="3" rx="0.6"/><rect class="mk-hole" x="12" y="46" width="3" height="3" rx="0.6"/>
+        <rect class="mk-ink" x="19" y="23" width="14" height="34" rx="5"/>
+        <circle cx="26" cy="30.5" r="3.4" fill="#E23D33"/><circle cx="26" cy="39.5" r="3.4" fill="#F2A51A"/><circle cx="26" cy="48.5" r="3.4" fill="#1F9D55"/>
+        <rect class="mk-ink" x="35" y="30" width="11" height="27" rx="2"/>
+        <rect class="mk-hole" x="38" y="34" width="3" height="3" rx="0.6"/><rect class="mk-hole" x="38" y="40" width="3" height="3" rx="0.6"/><rect class="mk-hole" x="38" y="46" width="3" height="3" rx="0.6"/>
+        <rect class="mk-ink" x="48" y="41" width="11" height="16" rx="2"/>
+        <rect class="mk-hole" x="51" y="45" width="3" height="3" rx="0.6"/><rect class="mk-hole" x="51" y="50" width="3" height="3" rx="0.6"/>
+        <rect class="mk-ink" x="3" y="57" width="58" height="3.2" rx="1.6"/>
+        <path fill="#0C98AA" d="M 20.18 16.11 A 7.60 7.60 0 0 1 31.82 16.11 A 1.60 1.60 0 0 1 29.37 18.17 A 4.40 4.40 0 0 0 22.63 18.17 A 1.60 1.60 0 0 1 20.18 16.11 Z"/>
+        <path fill="#0C98AA" d="M 16.38 11.38 A 13.60 13.60 0 0 1 35.62 11.38 A 1.60 1.60 0 0 1 33.35 13.65 A 10.40 10.40 0 0 0 18.65 13.65 A 1.60 1.60 0 0 1 16.38 11.38 Z"/>
+      </svg>
+      <span class="words"><b>QUADRUM</b><span>TECHNOLOGIES</span></span>
+    </a>
+    <nav class="main" aria-label="Main">
+      <a href="#products">Products</a>
+      <a href="#how-we-work">How we work</a>
+      <a href="#projects">Projects</a>
+      <a href="#shop">Shop<span class="soon">soon</span></a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <a class="btn solid" href="https://app.quadrumtechnologies.com/login">Client login</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap grid">
+      <div>
+        <p class="eyebrow">Hardware development · Abuja, Nigeria</p>
+        <h1>We develop traffic signal hardware and support it for the life of the junction.</h1>
+        <p class="lede">Quadrum Technologies designs signal controllers, their communication cards and the platform that runs them. Partner contractors install; we train their crews, verify every site and stand behind the hardware after handover.</p>
+        <div class="actions">
+          <a class="btn solid" href="#products">See the products</a>
+          <a class="btn ghost" href="#contact">Talk to us</a>
+        </div>
+      </div>
+
+      <figure class="chart">
+        <svg viewBox="0 0 560 214" role="img" aria-label="Signal timing chart for an example four-phase junction plan with a 120 second cycle. Phase 1, north-south left turn, is green from 0 to 12 seconds. Phase 2, north-south through, is green from 17 to 55 seconds. Phase 3, east-west left turn, is green from 60 to 72 seconds. Phase 4, east-west through, is green from 77 to 115 seconds. Each green is followed by 3 seconds of amber and 2 seconds of all-red.">
+          <g>
+            <text class="row-label" x="0" y="40"><tspan class="pn">1</tspan><tspan x="18">N–S left turn</tspan></text>
+            <rect class="r" x="158" y="22" width="390" height="26" rx="3"/>
+            <rect class="g" x="158" y="22" width="39" height="26"/>
+            <rect class="a" x="197" y="22" width="9.75" height="26"/>
+          </g>
+          <g>
+            <text class="row-label on" x="0" y="82"><tspan class="pn">2</tspan><tspan x="18">N–S through</tspan></text>
+            <rect class="r" x="158" y="64" width="390" height="26" rx="3"/>
+            <rect class="g" x="213.25" y="64" width="123.5" height="26"/>
+            <rect class="a" x="336.75" y="64" width="9.75" height="26"/>
+          </g>
+          <g>
+            <text class="row-label" x="0" y="124"><tspan class="pn">3</tspan><tspan x="18">E–W left turn</tspan></text>
+            <rect class="r" x="158" y="106" width="390" height="26" rx="3"/>
+            <rect class="g" x="353" y="106" width="39" height="26"/>
+            <rect class="a" x="392" y="106" width="9.75" height="26"/>
+          </g>
+          <g>
+            <text class="row-label" x="0" y="166"><tspan class="pn">4</tspan><tspan x="18">E–W through</tspan></text>
+            <rect class="r" x="158" y="148" width="390" height="26" rx="3"/>
+            <rect class="g" x="408.25" y="148" width="123.5" height="26"/>
+            <rect class="a" x="531.75" y="148" width="9.75" height="26"/>
+          </g>
+          <g class="axis">
+            <line x1="158" y1="186" x2="548" y2="186"/>
+            <line x1="158" y1="186" x2="158" y2="191"/>
+            <line x1="223" y1="186" x2="223" y2="191"/>
+            <line x1="288" y1="186" x2="288" y2="191"/>
+            <line x1="353" y1="186" x2="353" y2="191"/>
+            <line x1="418" y1="186" x2="418" y2="191"/>
+            <line x1="483" y1="186" x2="483" y2="191"/>
+            <line x1="548" y1="186" x2="548" y2="191"/>
+            <text x="158" y="206" text-anchor="middle">0</text>
+            <text x="223" y="206" text-anchor="middle">20</text>
+            <text x="288" y="206" text-anchor="middle">40</text>
+            <text x="353" y="206" text-anchor="middle">60</text>
+            <text x="418" y="206" text-anchor="middle">80</text>
+            <text x="483" y="206" text-anchor="middle">100</text>
+            <text x="548" y="206" text-anchor="end">120 s</text>
+          </g>
+          <g class="head" id="playhead" transform="translate(152.75 0)">
+            <line x1="158" y1="14" x2="158" y2="180"/>
+            <polygon points="152,7 164,7 158,14"/>
+          </g>
+        </svg>
+        <figcaption>
+          <span>Example 4-phase plan · 120 s cycle · amber 3 s · all-red 2 s</span>
+          <span class="live"><output id="t-readout">t =  47 s · Phase 2 green</output><button type="button" class="mini" id="play">Pause</button></span>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="band" id="products">
+    <div class="wrap">
+      <div class="head">
+        <h2>Products</h2>
+        <p>The controller, its communications and the platform are designed together, so one team answers for the whole junction.</p>
+      </div>
+
+      <article class="card controller">
+        <div class="copy">
+          <div class="tag-row"><span class="chip">Traffic · Hardware</span>
+            <svg viewBox="0 0 64 64" aria-hidden="true"><rect class="mk-ink" x="28" y="6" width="8" height="52" rx="4"/><rect class="mk-ink" x="6" y="28" width="52" height="8" rx="4"/><circle class="mk-ink" cx="32" cy="32" r="8.5"/><circle cx="32" cy="32" r="3.6" fill="#0C98AA"/><circle cx="32" cy="7" r="6" fill="#E23D33"/><circle cx="57" cy="32" r="6" fill="#F2A51A"/><circle cx="32" cy="57" r="6" fill="#1F9D55"/><circle cx="7" cy="32" r="6" fill="#0C98AA"/></svg>
+          </div>
+          <h3>TSLC 2.0 junction controller</h3>
+          <p>Our current controller. Each job sits on its own plug-in card in one backplane, so a fault is cleared on site by swapping a card.</p>
+          <ul class="feature-list">
+            <li>Ethernet, Wi-Fi, 433 MHz and 2.4 GHz radio links, RS485, and a GSM option</li>
+            <li>Battery-backed real-time clock keeps day plans running if the network drops</li>
+            <li>Inputs for pedestrian push buttons and a police panel: next, hold, manual</li>
+            <li>Hardware watchdog, temperature sensor and fault buzzer</li>
+          </ul>
+          <p class="spec">Managed from the Traffic Monitoring System · supported for 24 months under warranty</p>
+        </div>
+        <ul class="stack" aria-label="Cards in the TSLC 2.0">
+          <li class="cpu"><div><b>Comms card<span class="ver">v1.03</span></b><span class="d">The controller's processor and every link out of the cabinet.</span></div></li>
+          <li class="sig"><div><b>Signal card<span class="ver">v1.03</span></b><span class="d">Switches the signal lamps.</span></div></li>
+          <li class="pwr"><div><b>Power card<span class="ver">v1.0</span></b><span class="d">Supplies the cards in the cabinet.</span></div></li>
+          <li class="bp"><div><b>Backplane<span class="ver">v1.0</span></b><span class="d">Joins the cards; any card lifts out without rewiring.</span></div></li>
+        </ul>
+      </article>
+
+      <div class="cards">
+        <article class="card">
+          <div class="tag-row"><span class="chip">Traffic · Platform</span></div>
+          <h3>Traffic Monitoring System</h3>
+          <p>Every junction on one screen, in the browser, at app.quadrumtechnologies.com.</p>
+          <ul>
+            <li>Live signal state and controller health</li>
+            <li>Phases, patterns and day plans, with special dates</li>
+            <li>Send plans and take manual control remotely</li>
+            <li>Audit log of every change</li>
+          </ul>
+          <p class="spec">Next release: client organisations with their own users and roles</p>
+        </article>
+        <article class="card">
+          <div class="tag-row"><span class="chip dev">Vision · In development</span>
+            <svg viewBox="0 0 64 64" aria-hidden="true"><g transform="translate(2 2.5) scale(0.93)"><path class="mk-ink" d="M 5 30 A 23 23 0 1 0 51 30 A 23 23 0 1 0 5 30 Z M 12 30 A 16 16 0 1 1 44 30 A 16 16 0 1 1 12 30 Z"/><circle cx="28" cy="30" r="9.5" fill="#0C98AA"/><circle class="mk-ink" cx="28" cy="30" r="4.2"/><circle cx="44.5" cy="46.5" r="4" fill="#E23D33"/><circle cx="51.5" cy="53.5" r="4" fill="#F2A51A"/><circle cx="58.5" cy="60.5" r="3.6" fill="#1F9D55"/><path fill="#0C98AA" d="M 38.19 4.78 A 27.20 27.20 0 0 1 53.22 19.81 A 1.70 1.70 0 0 1 50.07 21.08 A 23.80 23.80 0 0 0 36.92 7.93 A 1.70 1.70 0 0 1 38.19 4.78 Z"/><path fill="#0C98AA" d="M 43.59 0.69 A 33.20 33.20 0 0 1 57.31 14.41 A 1.70 1.70 0 0 1 54.31 16.01 A 29.80 29.80 0 0 0 41.99 3.69 A 1.70 1.70 0 0 1 43.59 0.69 Z"/></g></svg>
+          </div>
+          <h3>ANPR and red-light enforcement</h3>
+          <p>Number-plate recognition and red-light violation capture, triggered by the signal state from our own controller.</p>
+          <p class="spec">Talk to us about pilot sites</p>
+        </article>
+      </div>
+      <p class="roadmap">After enforcement: smart metering.</p>
+    </div>
+  </section>
+
+  <section class="band" id="how-we-work">
+    <div class="wrap">
+      <div class="head">
+        <h2>We develop, train, verify and support. Partners install.</h2>
+        <p class="about">Quadrum Technologies Limited is a Nigerian hardware company, incorporated in Abuja in September 2022. We design and manufacture traffic and other control devices, and back them with engineering consulting. Nigeria comes first; the rest of Africa and beyond come next.</p>
+        <p class="facts-line"><span>RC 1977084</span><span>Incorporated 15 Sep 2022</span><span>Abuja, FCT</span></p>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <span class="n">01</span>
+          <h3>Develop</h3>
+          <p>Controllers, cards and firmware designed and tested in-house.</p>
+        </div>
+        <div class="step">
+          <span class="n">02</span>
+          <h3>Train</h3>
+          <p>Hands-on training for installer crews, operators and maintenance teams, on the hardware and the platform.</p>
+        </div>
+        <div class="step">
+          <span class="n">03</span>
+          <h3>Verify</h3>
+          <p>Site visits to check each installation against the design before handover.</p>
+        </div>
+        <div class="step">
+          <span class="n">04</span>
+          <h3>Support</h3>
+          <p>A 24-month warranty, remote diagnostics through the platform, spares and repairs after handover.</p>
+        </div>
+      </div>
+      <div class="note">
+        <p><strong>Not offered: installation contracts.</strong> Partner contractors handle installation and civil works, and we can introduce you to them.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="projects">
+    <div class="wrap">
+      <div class="head">
+        <h2>Projects</h2>
+        <p>Wired intersections we equipped with an earlier generation of Quadrum controllers. Both sites have since been upgraded.</p>
+      </div>
+      <div class="photos">
+        <figure class="photo">
+          <img src="assets/junction-boulevard.webp" width="1008" height="756" alt="A wide dual carriageway with mast-arm signal heads showing red across the approach" loading="lazy">
+          <figcaption>Wired intersection on an earlier Quadrum controller, since upgraded</figcaption>
+        </figure>
+        <figure class="photo">
+          <img src="assets/junction-green.webp" width="756" height="1008" alt="Vehicles moving off on a green signal at a junction with an Ahmadu Bello Way street sign" loading="lazy">
+          <figcaption>Wired intersection on an earlier Quadrum controller, since upgraded</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="shop">
+    <div class="wrap">
+      <div class="head">
+        <h2>Shop <span class="chip dev">Opening soon</span></h2>
+        <p>Controllers are quoted per junction. Spare cards and training will be listed here with online payment; until then, ask for a quote.</p>
+      </div>
+      <div class="cards">
+        <article class="card">
+          <h3>TSLC 2.0 controller</h3>
+          <p class="price">Quote</p>
+          <p class="muted">Priced per junction layout.</p>
+          <a class="btn ghost" href="mailto:hello@quadrumtechnologies.com?subject=Quote%20request%3A%20TSLC%202.0%20controller">Request a quote</a>
+        </article>
+        <article class="card">
+          <h3>Spare cards</h3>
+          <p class="price">Quote</p>
+          <p class="muted">Signal, power and comms cards for the TSLC 2.0.</p>
+          <a class="btn ghost" href="mailto:hello@quadrumtechnologies.com?subject=Quote%20request%3A%20spare%20cards">Request a quote</a>
+        </article>
+        <article class="card">
+          <h3>Operator training</h3>
+          <p class="price">Quote</p>
+          <p class="muted">On site or remote, per team.</p>
+          <a class="btn ghost" href="mailto:hello@quadrumtechnologies.com?subject=Training%20enquiry">Request a quote</a>
+        </article>
+        <article class="card">
+          <h3>Site verification visit</h3>
+          <p class="price">Quote</p>
+          <p class="muted">An installation checked against its design before handover.</p>
+          <a class="btn ghost" href="mailto:hello@quadrumtechnologies.com?subject=Site%20verification%20enquiry">Request a quote</a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="contact">
+    <div class="wrap contact-grid">
+      <div>
+        <div class="head">
+          <h2>Talk to us</h2>
+          <p>Products, quotes, training and support.</p>
+        </div>
+        <a class="email" href="mailto:hello@quadrumtechnologies.com">hello@quadrumtechnologies.com</a>
+        <div class="copy-row">
+          <button type="button" class="btn ghost" id="copy-email">Copy address</button>
+          <span class="copy-status" id="copy-status" role="status"></span>
+        </div>
+      </div>
+      <dl class="facts">
+        <dt>Office</dt>
+        <dd>Suite CA10, 2nd Floor, Sparklight Mall, Apo, Abuja, FCT, Nigeria</dd>
+        <dt>Phone</dt>
+        <dd>Lanre<span class="sep" aria-hidden="true"></span><a href="tel:+2348029717362">+234 802 971 7362</a></dd>
+        <dt>Clients</dt>
+        <dd>Sign in at <a href="https://app.quadrumtechnologies.com/login">app.quadrumtechnologies.com</a></dd>
+      </dl>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Quadrum Technologies Limited<span class="sep" aria-hidden="true"></span>RC 1977084<span class="sep" aria-hidden="true"></span>Abuja, Nigeria</span>
+    <nav aria-label="Footer">
+      <a href="#products">Products</a>
+      <a href="#contact">Contact</a>
+      <a href="https://app.quadrumtechnologies.com/login">Client login</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  // Timing chart: playhead runs the example plan at 5x speed. Static at t = 47 s when motion is reduced.
+  var head = document.getElementById('playhead');
+  var out = document.getElementById('t-readout');
+  var btn = document.getElementById('play');
+  var labels = document.querySelectorAll('.row-label');
+  var PX = 3.25, CYCLE = 120, SPEED = 5;
+  // phase: [green start, green end, amber end, all-red end] in seconds
+  var plan = [[0, 12, 15, 17], [17, 55, 58, 60], [60, 72, 75, 77], [77, 115, 118, 120]];
+
+  function stateAt(t) {
+    for (var i = 0; i < plan.length; i++) {
+      var p = plan[i];
+      if (t < p[3]) {
+        return { i: i, s: t < p[1] ? 'green' : (t < p[2] ? 'amber' : 'all-red') };
+      }
+    }
+    return { i: 3, s: 'all-red' };
+  }
+  function draw(t) {
+    head.setAttribute('transform', 'translate(' + (t * PX).toFixed(2) + ' 0)');
+    var st = stateAt(t);
+    var secs = String(Math.floor(t));
+    while (secs.length < 3) secs = ' ' + secs;
+    out.textContent = 't = ' + secs + ' s · ' + (st.s === 'all-red' ? 'all-red' : 'Phase ' + (st.i + 1) + ' ' + st.s);
+    for (var k = 0; k < labels.length; k++) {
+      labels[k].classList.toggle('on', k === st.i && st.s !== 'all-red');
+    }
+  }
+
+  var t = 47;
+  draw(t);
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) { btn.hidden = true; return; }
+
+  var running = true, last = null;
+  function frame(ts) {
+    if (!running) { last = null; return; }
+    if (last !== null) t = (t + (ts - last) / 1000 * SPEED) % CYCLE;
+    last = ts;
+    draw(t);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  btn.addEventListener('click', function () {
+    running = !running;
+    btn.textContent = running ? 'Pause' : 'Play';
+    if (running) requestAnimationFrame(frame);
+  });
+})();
+
+(function () {
+  var b = document.getElementById('copy-email');
+  var status = document.getElementById('copy-status');
+  b.addEventListener('click', function () {
+    var addr = 'hello@quadrumtechnologies.com';
+    function say(msg) { status.textContent = msg; }
+    try {
+      navigator.clipboard.writeText(addr).then(function () { say('Copied.'); }, function () { say('Copy blocked. Select the address above.'); });
+    } catch (e) {
+      say('Copy blocked. Select the address above.');
+    }
+  });
+})();
+</script>
+</body>
+</html>
