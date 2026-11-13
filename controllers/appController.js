@@ -868,7 +868,7 @@ exports.confirmPasswordHandler = catchAsync(async (req, res) => {
 exports.getDeviceInfoByDeviceIDHandler = catchAsync(async (req, res) => {
   const { deviceID } = req.params;
 
-  const info = await UserDeviceInfo.findOne({ DeviceID: deviceID });
+  const info = await UserDeviceInfo.findOne({ DeviceID: deviceID }).select("-JunctionPassword");
   if (!info) {
     return res.status(404).json({
       status: "error",

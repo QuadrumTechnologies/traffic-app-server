@@ -112,12 +112,14 @@ exports.infoDataHandler = catchAsync(async (ws, clients, payload) => {
       });
     }
 
+    // The junction password stays in the database: no page needs it.
+    const { JunctionPassword: _hidden, ...shown } = payload || {};
     clients.forEach((client) => {
       if (client.clientType !== payload.DeviceID) {
         client.send(
           JSON.stringify({
             event: "info_feedback",
-            payload,
+            payload: shown,
           })
         );
       }

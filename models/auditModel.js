@@ -27,6 +27,9 @@ const auditLogSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  // Set for actions on a junction, so its page can list its activity.
+  deviceId: { type: String, index: true },
+  actorName: { type: String },
 });
 const AuditLog = mongoose.model("AuditLog", auditLogSchema);
 module.exports = { AuditLog };
