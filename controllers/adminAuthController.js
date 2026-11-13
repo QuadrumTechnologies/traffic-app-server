@@ -105,6 +105,25 @@ exports.authenticateAdminUser = catchAsync(async (req, res, next) => {
 exports.signup = catchAsync(async (req, res, next) => {
   console.log("Signing up admin user:", req.body.email);
 
+  // Admin accounts are not open to the public. The rule in the browser form
+  // isn't enough on its own; set ADMIN_SIGNUP_ENABLED=true only while adding
+  // an admin, and ADMIN_SIGNUP_EMAILS to the addresses allowed to sign up.
+  const allowedEmails = (process.env.ADMIN_SIGNUP_EMAILS || "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+  const requestedEmail = String(req.body.email || "").trim().toLowerCase();
+  if (
+    process.env.ADMIN_SIGNUP_ENABLED !== "true" ||
+    !allowedEmails.includes(requestedEmail)
+  ) {
+    return res.status(403).json({
+      status: "error",
+      message:
+        "Admin sign-up is closed. Ask an existing Quadrum admin to add your account.",
+    });
+  }
+
   const checkUser = await AdminUser.findOne({ email: req.body.email });
   if (checkUser) {
     return res.status(400).json({
@@ -222,7 +241,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   const resetToken = user.genPasswordResetToken();
   await user.save({ validateBeforeSave: false });
 
-  const resetPasswordUrl = `${process.env.CLIENT_URL}/reset_password/${resetToken}`;
+  const resetPasswordUrl = `${process.env.CLIENT_URL}/admin/reset_password/${resetToken}`;
 
   try {
     await new Email(user, resetPasswordUrl).sendPasswordReset();
@@ -275,7 +294,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   try {
     await new Email(
       user,
-      `${process.env.CLIENT_URL}/login`
+      `${process.env.CLIENT_URL}/admin/login`
     ).sendPasswordResetSuccess();
     return res.status(200).json({
       status: "success",
@@ -292,18 +311,11 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 });
 
 exports.deactivateAccount = catchAsync(async (req, res, next) => {
-  const { email } = req.body;
-  const user = await AdminUser.findOne({ email });
-
-  if (!user) {
-    return res.status(404).json({
-      status: "error",
-      message: `No admin user found with the email ${email}. Please check the email and try again.`,
-    });
-  }
+  // Runs after authenticateAdminUser: only the signed-in admin's own account.
+  const user = req.user;
 
   user.active = false;
-  await user.save();
+  await user.save({ validateBeforeSave: false });
   return res.status(200).json({
     status: "success",
     message:
@@ -371,7 +383,7 @@ exports.reactivateAccount = catchAsync(async (req, res, next) => {
   }
 
   user.active = true;
-  await user.save();
+  await user.save({ validateBeforeSave: false });
   return res.status(200).json({
     status: "success",
     message: "Admin account reactivated successfully. You can now log in.",

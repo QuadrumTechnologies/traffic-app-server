@@ -15,7 +15,8 @@ const { generateSecretKey } = require("../utils/misc");
 
 exports.getDeviceDetailById = catchAsync(async (req, res, next) => {
   console.log("Getting device detail by user");
-  const { deviceId, email } = req.params;
+  const { deviceId } = req.params;
+  const { email } = req.user;
 
   const existingDevice = await AdminDevice.findOne({ deviceId });
   if (!existingDevice) {
@@ -167,7 +168,8 @@ exports.addPhaseByUserHandler = catchAsync(async (req, res, next) => {
 
 exports.updatePhaseByUserHandler = catchAsync(async (req, res, next) => {
   console.log("Updating Phase by user", req.body);
-  const { phaseId, email } = req.params;
+  const { phaseId } = req.params;
+  const { email } = req.user;
   const { phase } = req.body;
 
   if (!phase.deviceId) {
@@ -285,7 +287,7 @@ exports.deletePhaseByUserHandler = catchAsync(async (req, res) => {
 
 exports.deleteAllPhasesByUserHandler = catchAsync(async (req, res) => {
   console.log("Deleting all phases for user", req.params);
-  const { email } = req.params;
+  const { email } = req.user;
 
   if (!email) {
     return res.status(400).json({
@@ -488,7 +490,7 @@ exports.deletePatternByUserHandler = catchAsync(async (req, res) => {
 
 exports.deleteAllPatternsByUserHandler = catchAsync(async (req, res) => {
   console.log("Deleting all patterns for user", req.params);
-  const { email } = req.params;
+  const { email } = req.user;
 
   if (!email) {
     return res.status(400).json({
@@ -764,8 +766,8 @@ exports.deletePlanByUserHandler = catchAsync(async (req, res) => {
 });
 
 exports.deleteAllPlansByUserHandler = catchAsync(async (req, res) => {
-  console.log("Deleting all plans for user", req.params.email);
-  const { email } = req.params;
+  console.log("Deleting all plans for user", req.user.email);
+  const { email } = req.user;
 
   if (!email) {
     return res.status(400).json({
@@ -889,7 +891,10 @@ exports.getDeviceFullDetailsByDeviceIDHandler = catchAsync(async (req, res) => {
   console.log("Getting device full details by device ID", req.params);
   const { deviceID } = req.params;
 
-  const device = await UserDevice.findOne({ deviceId: deviceID });
+  const device = await UserDevice.findOne({
+    deviceId: deviceID,
+    email: req.user.email,
+  });
   if (!device) {
     return res.status(404).json({
       status: "error",
@@ -909,7 +914,17 @@ exports.updateAllowAdminSupportHandler = catchAsync(async (req, res) => {
   const { deviceID } = req.params;
   const { allowAdminSupport } = req.body;
 
-  const device = await UserDevice.findOne({ deviceId: deviceID });
+  if (typeof allowAdminSupport !== "boolean") {
+    return res.status(400).json({
+      status: "error",
+      message: "allowAdminSupport must be true or false.",
+    });
+  }
+
+  const device = await UserDevice.findOne({
+    deviceId: deviceID,
+    email: req.user.email,
+  });
   if (!device) {
     return res.status(404).json({
       status: "error",
@@ -932,7 +947,7 @@ exports.deleteOrRestoreDeviceHandler = catchAsync(async (req, res) => {
   const { deviceId } = req.params;
   const restoreDevice = req.body.restore === true;
 
-  const device = await UserDevice.findOne({ deviceId });
+  const device = await UserDevice.findOne({ deviceId, email: req.user.email });
   if (!device) {
     return res.status(404).json({
       status: "error",

@@ -27,7 +27,11 @@ router.patch(
 
 router.patch("/updatePassword", authController.updatePassword);
 
-router.patch("/deactivateAccount", authController.deactivateAccount);
+router.patch(
+  "/deactivateAccount",
+  authController.authenticateUser,
+  authController.deactivateAccount
+);
 
 router.patch("/reactivateAccount", authController.reactivateAccount);
 
