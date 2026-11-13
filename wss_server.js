@@ -147,8 +147,11 @@ function initWebSocketServer() {
         if (data.event) {
           if (data.event === "identify") {
             // Dashboards prove who they are with their sign-in token; the
-            // email and admin flag they send are not trusted.
-            const account = await resolveToken(data.token);
+            // email and admin flag they send are not trusted. Requests that
+            // arrive while the token is being checked wait for this result
+            // (see below), so a page can send them right after identifying.
+            ws.identifying = resolveToken(data.token).catch(() => null);
+            const account = await ws.identifying;
             if (!account) {
               ws.clientType = null;
               ws.userEmail = null;
@@ -184,6 +187,7 @@ function initWebSocketServer() {
             sendError(ws, `Unknown event: ${data.event}`);
             return;
           }
+          if (ws.identifying) await ws.identifying;
           if (ws.clientType !== "web_app" || !ws.account) {
             sendError(ws, "Please sign in again.");
             return;
