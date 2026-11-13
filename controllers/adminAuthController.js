@@ -85,11 +85,17 @@ exports.authenticateAdminUser = catchAsync(async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const currentUser = await AdminUser.findById(decoded.id);
+    const currentUser = await AdminUser.findById(decoded.id).select("+active");
     if (!currentUser) {
       return res.status(401).json({
         status: "error",
         message: "The admin user associated with this token no longer exists.",
+      });
+    }
+    if (currentUser.active === false) {
+      return res.status(401).json({
+        status: "error",
+        message: "Your account is paused. Ask your admin to resume it, then log in again.",
       });
     }
     req.user = currentUser;
@@ -195,13 +201,19 @@ exports.login = catchAsync(async (req, res, next) => {
   );
   if (
     !claimedUser ||
-    !(await claimedUser.correctPassword(claimedCorrectPassword)) ||
-    !claimedUser.active
+    !(await claimedUser.correctPassword(claimedCorrectPassword))
   ) {
     return res.status(400).json({
       status: "error",
       message:
         "Incorrect email or password, or admin account is deactivated. Please check your credentials and try again.",
+    });
+  }
+
+  if (claimedUser.active === false) {
+    return res.status(403).json({
+      status: "error",
+      message: "This admin account is paused.",
     });
   }
 
@@ -212,6 +224,9 @@ exports.login = catchAsync(async (req, res, next) => {
         "Your admin email is not verified. Please check your inbox for the verification email.",
     });
   }
+
+  claimedUser.lastLoginAt = new Date();
+  await claimedUser.save({ validateBeforeSave: false });
 
   createSendToken(claimedUser, 200, req, res);
 });
@@ -289,6 +304,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   user.confirmPassword = confirmPassword;
   user.passwordResetToken = undefined;
   user.passwordResetTokenExpiresIn = undefined;
+  user.verified = true;
   await user.save();
 
   try {
@@ -311,15 +327,10 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 });
 
 exports.deactivateAccount = catchAsync(async (req, res, next) => {
-  // Runs after authenticateAdminUser: only the signed-in admin's own account.
-  const user = req.user;
-
-  user.active = false;
-  await user.save({ validateBeforeSave: false });
-  return res.status(200).json({
-    status: "success",
-    message:
-      "Admin account deactivated successfully. You can reactivate it anytime.",
+  // Admin accounts are managed by Quadrum, not switched off by their owners.
+  return res.status(410).json({
+    status: "error",
+    message: "Accounts are paused and resumed by an admin now. Contact hello@quadrumtechnologies.com if you need this.",
   });
 });
 
@@ -357,35 +368,9 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
 });
 
 exports.reactivateAccount = catchAsync(async (req, res, next) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({
-      status: "error",
-      message:
-        "Please provide both email and password to reactivate your admin account.",
-    });
-  }
-
-  const user = await AdminUser.findOne({ email }).select("+password");
-  if (!user) {
-    return res.status(404).json({
-      status: "error",
-      message: `No admin user found with the email ${email}. Please check the email and try again.`,
-    });
-  }
-
-  if (!(await user.correctPassword(password))) {
-    return res.status(401).json({
-      status: "error",
-      message: "Incorrect password. Please try again.",
-    });
-  }
-
-  user.active = true;
-  await user.save({ validateBeforeSave: false });
-  return res.status(200).json({
-    status: "success",
-    message: "Admin account reactivated successfully. You can now log in.",
+  // Admin accounts are managed by Quadrum, not switched off by their owners.
+  return res.status(410).json({
+    status: "error",
+    message: "Accounts are paused and resumed by an admin now. Contact hello@quadrumtechnologies.com if you need this.",
   });
 });

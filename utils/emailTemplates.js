@@ -500,3 +500,36 @@ exports.generateDeviceAssignmentHTML = function (firstName, deviceId) {
                   </html>
                 `;
 };
+
+// An admin invited this person: they choose their own password from the link.
+exports.generateInviteHTML = function (firstName, setPasswordUrl, roleLabel) {
+  return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Your Traffic Monitoring System account</title>
+            <style>
+                body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; color: #333; }
+                .container { background-color: #fff; margin: 50px auto; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); max-width: 600px; }
+                .content { padding: 20px; }
+                .button { display: inline-block; padding: 15px 25px; margin: 20px 0; background-color: #08707d; color: #fff; text-decoration: none; border-radius: 5px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="content">
+                    <h1>You've been given access</h1>
+                    <p>Hello ${firstName},</p>
+                    <p>A Quadrum Technologies admin has set up an account for you on the Traffic Monitoring System, as ${roleLabel}.</p>
+                    <p>Choose your password to sign in:</p>
+                    <a href="${setPasswordUrl}" class="button">Choose a password</a>
+                    <p>If the button doesn't work, copy this address into your browser:</p>
+                    <p>${setPasswordUrl}</p>
+                    <p>The link works for 3 days. If it has expired, ask your admin to send a new one.</p>
+                    <p><strong>Quadrum Technologies</strong></p>
+                </div>
+            </div>
+        </body>
+        </html>
+      `;
+};

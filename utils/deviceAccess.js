@@ -34,16 +34,23 @@ function forgetDevice(deviceId) {
 // - A user: they own it.
 // - An admin: it belongs to their department. To operate a device that a user
 //   owns, the owner must have allowed admin support.
+// Client accounts made before roles existed have none: they keep full control.
+function roleOf(user) {
+  return (user && user.role) || "admin";
+}
+
 async function canAccessDevice(account, deviceId, { control = false } = {}) {
   if (!account || !account.user || !deviceId) return false;
   const record = await deviceRecord(deviceId);
   if (!record) return false;
 
   if (!account.isAdmin) {
-    return (
+    const isOwner =
       Boolean(record.ownerEmail) &&
-      record.ownerEmail.toLowerCase() === String(account.user.email).toLowerCase()
-    );
+      record.ownerEmail.toLowerCase() === String(account.user.email).toLowerCase();
+    // Viewers watch; only admins and operators send commands or settings.
+    if (control && roleOf(account.user) === "viewer") return false;
+    return isOwner;
   }
 
   if (!record.known || record.department !== account.user.department) {
@@ -52,4 +59,4 @@ async function canAccessDevice(account, deviceId, { control = false } = {}) {
   return control ? record.allowAdminSupport : true;
 }
 
-module.exports = { deviceRecord, forgetDevice, canAccessDevice };
+module.exports = { deviceRecord, forgetDevice, canAccessDevice, roleOf };

@@ -57,6 +57,8 @@ const adminUserSchema = new mongoose.Schema({
     select: false,
   },
 
+  lastLoginAt: Date,
+
   passwordChangedAt: Date,
   passwordResetToken: String,
   passwordResetTokenExpiresIn: String,

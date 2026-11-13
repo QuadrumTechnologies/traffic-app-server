@@ -83,11 +83,17 @@ exports.authenticateUser = catchAsync(async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const currentUser = await User.findById(decoded.id);
+    const currentUser = await User.findById(decoded.id).select("+active");
     if (!currentUser) {
       return res.status(401).json({
         status: "error",
         message: "The user associated with this token no longer exists.",
+      });
+    }
+    if (currentUser.active === false) {
+      return res.status(401).json({
+        status: "error",
+        message: "Your account is paused. Ask your admin to resume it, then log in again.",
       });
     }
     console.log("Current authenticated user:", currentUser.email);
@@ -174,13 +180,19 @@ exports.login = catchAsync(async (req, res, next) => {
   );
   if (
     !claimedUser ||
-    !(await claimedUser.correctPassword(claimedCorrectPassword)) ||
-    !claimedUser.active
+    !(await claimedUser.correctPassword(claimedCorrectPassword))
   ) {
     return res.status(400).json({
       status: "error",
       message:
         "Incorrect email or password, or account is deactivated. Please check your credentials and try again.",
+    });
+  }
+
+  if (claimedUser.active === false) {
+    return res.status(403).json({
+      status: "error",
+      message: "This account is paused. Ask your admin to resume it.",
     });
   }
 
@@ -191,6 +203,9 @@ exports.login = catchAsync(async (req, res, next) => {
         "Your email is not verified. Please check your inbox for the verification email.",
     });
   }
+
+  claimedUser.lastLoginAt = new Date();
+  await claimedUser.save({ validateBeforeSave: false });
 
   createSendToken(claimedUser, 200, req, res);
 });
@@ -268,6 +283,9 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   user.confirmPassword = confirmPassword;
   user.passwordResetToken = undefined;
   user.passwordResetTokenExpiresIn = undefined;
+  // The link was emailed to this address, so the address is confirmed
+  // (this is also how invited people set their first password).
+  user.verified = true;
   await user.save();
 
   try {
@@ -290,14 +308,11 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 });
 
 exports.deactivateAccount = catchAsync(async (req, res, next) => {
-  // Runs after authenticateUser: only the signed-in user's own account.
-  const user = req.user;
-
-  user.active = false;
-  await user.save({ validateBeforeSave: false });
-  return res.status(200).json({
-    status: "success",
-    message: "Account deactivated successfully. You can reactivate it anytime.",
+  // Accounts are paused and resumed by an admin (Users page); people no
+  // longer switch their own accounts off and on.
+  return res.status(410).json({
+    status: "error",
+    message: "Accounts are paused and resumed by an admin now. Contact hello@quadrumtechnologies.com if you need this.",
   });
 });
 
@@ -335,35 +350,10 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
 });
 
 exports.reactivateAccount = catchAsync(async (req, res, next) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({
-      status: "error",
-      message:
-        "Please provide both email and password to reactivate your account.",
-    });
-  }
-
-  const user = await User.findOne({ email }).select("+password");
-  if (!user) {
-    return res.status(404).json({
-      status: "error",
-      message: `No user found with the email ${email}. Please check the email and try again.`,
-    });
-  }
-
-  if (!(await user.correctPassword(password))) {
-    return res.status(401).json({
-      status: "error",
-      message: "Incorrect password. Please try again.",
-    });
-  }
-
-  user.active = true;
-  await user.save({ validateBeforeSave: false });
-  return res.status(200).json({
-    status: "success",
-    message: "Account reactivated successfully. You can now log in.",
+  // Accounts are paused and resumed by an admin (Users page); people no
+  // longer switch their own accounts off and on.
+  return res.status(410).json({
+    status: "error",
+    message: "Accounts are paused and resumed by an admin now. Contact hello@quadrumtechnologies.com if you need this.",
   });
 });

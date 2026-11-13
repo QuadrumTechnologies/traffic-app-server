@@ -29,7 +29,7 @@ const { UserDevice, UserDeviceState } = require("./models/appModel");
 const { AdminDevice } = require("./models/adminAppModel");
 const { setDeviceOnline } = require("./handlers/deviceStatusNotifiesHandler");
 const { resolveToken } = require("./utils/authTokens");
-const { deviceRecord, canAccessDevice } = require("./utils/deviceAccess");
+const { deviceRecord, canAccessDevice, roleOf } = require("./utils/deviceAccess");
 
 // Dashboard requests: handler, and whether the request operates the junction
 // (an admin may only operate a user's device if the owner allows support).
@@ -199,7 +199,16 @@ function initWebSocketServer() {
             control: route.control,
           });
           if (!allowed) {
-            sendError(ws, `You don't have access to device ${deviceId}.`);
+            const viewerBlocked =
+              route.control &&
+              !ws.account.isAdmin &&
+              roleOf(ws.account.user) === "viewer";
+            sendError(
+              ws,
+              viewerBlocked
+                ? "Your account can view this junction but not operate it."
+                : `You don't have access to device ${deviceId}.`
+            );
             return;
           }
 
