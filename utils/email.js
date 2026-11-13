@@ -9,6 +9,7 @@ const {
   generateDeviceRecalledHTML,
   generateDeviceUnrecalledHTML,
   generateDeviceAssignmentHTML,
+  generateInviteHTML,
 } = require("./emailTemplates");
 
 class Email {
@@ -72,6 +73,13 @@ class Email {
       "Password Reset Link (valid for only 1 hour)"
     );
   }
+  async sendInvite(roleLabel) {
+    await this.send(
+      generateInviteHTML(this.firstName, this.url, roleLabel),
+      "Your Traffic Monitoring System account"
+    );
+  }
+
   async sendPasswordResetSuccess() {
     await this.send(
       generateResetPasswordSuccessHTML(),

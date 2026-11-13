@@ -52,6 +52,23 @@ const userSchema = new mongoose.Schema({
     select: false,
   },
 
+  // What the account may do with the junctions it can see:
+  //   admin    - everything, including adding junctions to the account
+  //   operator - commands and timing changes
+  //   viewer   - watch only
+  // Accounts created before roles existed have no value and are treated as
+  // admin, which is what they could do before.
+  role: {
+    type: String,
+    enum: ["admin", "operator", "viewer"],
+  },
+  lastLoginAt: Date,
+  invitedAt: Date,
+  invitedBy: String,
+  // Set when a Quadrum admin pauses the account (active: false).
+  pausedAt: Date,
+  pausedBy: String,
+
   passwordChangedAt: Date,
   passwordResetToken: String,
   passwordResetTokenExpiresIn: String,
@@ -92,15 +109,19 @@ userSchema.methods.genEmailVerificationToken = function () {
 };
 
 // Generates password reset token
-userSchema.methods.genPasswordResetToken = function () {
+// validForMs: 1 hour for a reset; invitations use longer (see adminUsersController).
+userSchema.methods.genPasswordResetToken = function (validForMs = 60 * 60 * 1000) {
   const resetToken = crypto.randomBytes(32).toString("hex");
   this.passwordResetToken = crypto
     .createHash("sha256")
     .update(resetToken)
     .digest("hex");
-  // console.log({ resetToken }, this.passwordResetToken);
-  this.passwordResetTokenExpiresIn = Date.now() + 60 * 60 * 1000; // 1hr
+  this.passwordResetTokenExpiresIn = Date.now() + validForMs;
   return resetToken;
+};
+
+userSchema.methods.effectiveRole = function () {
+  return this.role || "admin";
 };
 
 userSchema.methods.correctPassword = async function (claimedPassword) {
