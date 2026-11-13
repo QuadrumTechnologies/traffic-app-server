@@ -120,17 +120,25 @@
   }
 
   // Runs a scene while it is on screen and playing; the button pauses it.
+  // 30 frames a second is smooth for this motion and halves the work of 60.
+  const FRAME = 1 / 30;
+  const SAVE_DATA = Boolean(navigator.connection && navigator.connection.saveData);
   function runner(figure, svg, step, render) {
     const button = figure.querySelector(".scene-play");
-    let playing = !REDUCE;
+    let playing = !REDUCE && !SAVE_DATA;
     let visible = false;
     let last = 0;
+    let acc = 0;
     let raf = 0;
     const loop = (t) => {
-      const dt = Math.min(0.05, Math.max(0, (t - last) / 1000));
+      acc += Math.min(0.1, Math.max(0, (t - last) / 1000));
       last = t;
-      step(dt);
-      render();
+      if (acc >= FRAME) {
+        const dt = Math.min(0.05, acc);
+        acc = 0;
+        step(dt);
+        render();
+      }
       raf = requestAnimationFrame(loop);
     };
     const sync = () => {
@@ -146,7 +154,7 @@
     };
     if (button) button.addEventListener("click", () => { playing = !playing; sync(); });
     if ("IntersectionObserver" in window) {
-      new IntersectionObserver((entries) => { visible = entries[0].isIntersecting; sync(); }, { threshold: 0.1 }).observe(svg);
+      new IntersectionObserver((entries) => { visible = entries[0].intersectionRatio >= 0.35; sync(); }, { threshold: [0, 0.35, 0.7] }).observe(svg);
     } else {
       visible = true;
     }
@@ -359,8 +367,9 @@
 
     const cars = el("g", {}, svg);
     const lanes = [
-      { group: "EW", d: "M-30 237.5 H830", stop: 553, every: [0.9, 2.4] },
-      { group: "EW", d: "M-30 272.5 H830", stop: 553, every: [1.0, 2.6] },
+      { group: "EW", d: "M-30 237.5 H830", stop: 553, every: [0.8, 2.0] },
+      // The outer lane is quieter, so it's usually clear for the red-light runner.
+      { group: "EW", d: "M-30 272.5 H830", stop: 553, every: [3.2, 6.0] },
       { group: "EW", d: "M830 167.5 H-30", stop: 94, every: [1.3, 3.2] },
       { group: "EW", d: "M830 202.5 H-30", stop: 94, every: [1.4, 3.4] },
       { group: "NS", d: "M577.5 -30 V480", stop: 154, every: [1.6, 3.4] },
@@ -370,6 +379,15 @@
     ];
     const traffic = laneTraffic(svg, cars, lanes, { vmax: 160 });
     const boxes = el("g", {}, svg);
+    const pool = [];
+    function boxAt(i) {
+      if (!pool[i]) {
+        const r = el("rect", { width: 26, height: 18, rx: 2, fill: "none", "stroke-width": 1.2 }, boxes);
+        const t = el("text", { class: "scene-tiny" }, boxes);
+        pool[i] = { r, t };
+      }
+      return pool[i];
+    }
 
     // Pole with radar and camera, south kerb, looking back along the approach.
     const pole = el("g", { transform: "translate(470 318)" }, svg);
@@ -454,7 +472,7 @@
         if (front && lane.stop - front.s > 230) car = front;
         else if (!front) car = traffic.spawn(lane, { s: 0 });
         if (car) {
-          const v = Math.min(400, (lane.stop - car.s) / arrive);
+          const v = Math.min(420, (lane.stop - car.s) / arrive);
           Object.assign(car, { obeys: false, v, vmax: v, onCross: onViolation });
         }
       }
@@ -484,17 +502,30 @@
       const slide = cardT > 0 ? Math.min(1, (5.5 - cardT) * 4, cardT * 3) : 0;
       card.setAttribute("transform", `translate(${816 - slide * 300} 18)`);
       card.setAttribute("opacity", slide);
-      // Boxes around detected vehicles.
-      while (boxes.firstChild) boxes.firstChild.remove();
+      // Boxes around detected vehicles, drawn from a reused pool.
+      let n = 0;
       [lanes[0], lanes[1]].forEach((l) => l.cars.forEach((c) => {
         if (c.s < 200 || c.s > 690) return;
-        const p = l.path.at(c.s - 9);
         const bad = c.flagged;
         if (!bad && c.s > l.stop + 30) return;
-        el("rect", { x: p.x - 13, y: p.y - 9, width: 26, height: 18, rx: 2, fill: "none", stroke: bad ? C.red : C.teal, "stroke-width": 1.2 }, boxes);
+        const p = l.path.at(c.s - 9);
+        const b = boxAt(n++);
+        b.r.setAttribute("x", (p.x - 13).toFixed(1));
+        b.r.setAttribute("y", (p.y - 9).toFixed(1));
+        b.r.setAttribute("stroke", bad ? C.red : C.teal);
+        b.r.setAttribute("visibility", "visible");
         // Speeds only for moving vehicles, so a queue doesn't stack its labels.
-        if (bad || c.v > 30) txt(boxes, p.x - 13, p.y - 12, bad ? "red-light" : `${Math.round((c.v / 160) * 52)} km/h`, { class: bad ? "scene-tiny scene-red" : "scene-tiny scene-teal" });
+        const label = bad ? "red-light" : c.v > 30 ? `${Math.round((c.v / 160) * 52)} km/h` : "";
+        b.t.setAttribute("x", (p.x - 13).toFixed(1));
+        b.t.setAttribute("y", (p.y - 12).toFixed(1));
+        b.t.setAttribute("class", bad ? "scene-tiny scene-red" : "scene-tiny scene-teal");
+        if (b.t.textContent !== label) b.t.textContent = label;
+        b.t.setAttribute("visibility", "visible");
       }));
+      for (let i = n; i < pool.length; i++) {
+        pool[i].r.setAttribute("visibility", "hidden");
+        pool[i].t.setAttribute("visibility", "hidden");
+      }
       traffic.render();
     }
     for (let i = 0; i < 600; i++) step(1 / 30);
@@ -593,11 +624,29 @@
     let rowIx = 0, rowT = 0, shown = [], viol = 31, fines = 1550000, watch = 1, delay = 14, camX = 0, flow = [];
     let alertT = 0, incidentT = 0, monT = 0;
     const naira = (n) => "₦" + (n >= 1e6 ? (n / 1e6).toFixed(2) + "m" : Math.round(n / 1000) + "k");
+    let newest = null, newestBorn = 0, watchTags = [];
+    function drawList() {
+      while (list.firstChild) list.firstChild.remove();
+      watchTags = [];
+      shown.forEach((r, i) => {
+        const y = 170 + i * 19;
+        const g = el("g", {}, list);
+        txt(g, 298, y, r.time, { class: "scene-tiny" });
+        txt(g, 352, y, r.plate, { class: "scene-text-sm" });
+        if (r.tag) {
+          const tag = el("rect", { x: 430, y: y - 10, width: 68, height: 13, rx: 3, fill: r.kind === "watch" ? C.red : C.amber, opacity: 0.9 }, g);
+          if (r.kind === "watch") watchTags.push(tag);
+          txt(g, 434, y, r.tag, { class: "scene-tag" });
+        }
+        if (i === 0) { newest = g; newestBorn = r.born; g.setAttribute("opacity", 0); }
+      });
+    }
     function addRow() {
       const r = ROWS[rowIx++ % ROWS.length];
       const now = new Date();
       shown.unshift({ ...r, time: now.toTimeString().slice(0, 8), born: performance.now() });
       shown = shown.slice(0, 5);
+      drawList();
       if (r.kind === "fine") { viol += 1; fines += 50000; }
       if (r.kind === "watch") { watch += 1; alertT = 4; }
       if (r.kind) {
@@ -632,19 +681,9 @@
       camCar.setAttribute("transform", `translate(${298 + camX - 10} 98)`);
       camBox.setAttribute("stroke", camX > 150 ? C.red : C.teal);
       camRead.textContent = T(camX > 150 ? "KJA 482 XY · red-light" : camX > 60 ? "reading plate…" : "");
-      while (list.firstChild) list.firstChild.remove();
-      shown.forEach((r, i) => {
-        const y = 170 + i * 19;
-        const age = (performance.now() - r.born) / 400;
-        const g = el("g", { opacity: Math.min(1, age) }, list);
-        txt(g, 298, y, r.time, { class: "scene-tiny" });
-        txt(g, 352, y, r.plate, { class: "scene-text-sm" });
-        if (r.tag) {
-          const bad = r.kind === "watch";
-          el("rect", { x: 430, y: y - 10, width: 68, height: 13, rx: 3, fill: bad ? C.red : C.amber, opacity: bad && alertT > 0 && blink ? 0.45 : 0.9 }, g);
-          txt(g, 434, y, r.tag, { class: "scene-tag" });
-        }
-      });
+      // Fade in the newest row; the list itself changes only when a read arrives.
+      if (newest) newest.setAttribute("opacity", Math.min(1, (performance.now() - newestBorn) / 400).toFixed(2));
+      watchTags.forEach((tag) => tag.setAttribute("opacity", alertT > 0 && blink ? 0.45 : 0.9));
       kViol.textContent = T(String(viol));
       kFine.textContent = T(naira(fines));
       kWatch.textContent = T(String(watch));
