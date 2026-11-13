@@ -1,31 +1,35 @@
 const cron = require("node-cron");
-const { UserDevice } = require("./models/appModel");
+const { expiredLinks, deleteLink } = require("./utils/junctionRelease");
 
-const deleteExpiredDevices = async () => {
-  const now = new Date();
-
+// Each night, release junction links whose trash period (30 days) or recall
+// notice (7 days) has ended. deleteAt and recallAt hold the moment of release:
+// they are set to "now + period" when the junction is moved to trash or
+// recalled, so they are compared with the current time as they are.
+// (Until Nov 2026 the job added the period a second time: trash lasted 60
+// days and a recall 14, not what the dashboard and the emails said.)
+const deleteExpiredDevices = async (now = new Date()) => {
   try {
-    // Delete devices older than 7 days (admin recall)
-    await UserDevice.deleteMany({
-      isRecalled: true,
-      recallAt: { $lte: new Date(now - 7 * 24 * 60 * 60 * 1000) },
-    });
-
-    // Delete devices older than 30 days (user deletion)
-    await UserDevice.deleteMany({
-      isTrash: true,
-      deleteAt: { $lte: new Date(now - 30 * 24 * 60 * 60 * 1000) },
-    });
-
-    console.log("Expired devices deleted successfully.");
+    const links = await expiredLinks(now);
+    for (const link of links) {
+      await deleteLink(link);
+    }
+    if (links.length > 0) {
+      console.log(
+        `Released ${links.length} junction link(s): ${links
+          .map((l) => `${l.deviceId} (${l.isRecalled ? "recalled" : "trash"})`)
+          .join(", ")}`
+      );
+    }
+    return links.map((l) => l.deviceId);
   } catch (error) {
-    console.error("Error deleting expired devices:", error);
+    console.error("Error releasing expired junction links:", error);
+    return [];
   }
 };
 
-// Schedule the cron job to run every midnight
-cron.schedule("0 0 * * *", deleteExpiredDevices);
+// Every midnight.
+cron.schedule("0 0 * * *", () => deleteExpiredDevices());
 
-console.log("Cron job for deleting expired devices scheduled.");
+console.log("Cron job for releasing expired junction links scheduled.");
 
 module.exports = deleteExpiredDevices;

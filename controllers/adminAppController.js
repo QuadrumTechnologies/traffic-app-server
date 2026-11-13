@@ -1,10 +1,17 @@
 const { AdminDevice } = require("../models/adminAppModel");
 const AdminUser = require("../models/adminUserModel");
-const { UserDevice, UserDeviceInfo } = require("../models/appModel");
+const {
+  UserDevice,
+  UserDeviceInfo,
+  UserPhase,
+  UserPattern,
+  UserPlan,
+} = require("../models/appModel");
 const { AuditLog } = require("../models/auditModel");
 const User = require("../models/userModel");
 const catchAsync = require("../utils/catchAsync");
 const Email = require("../utils/email");
+const { poolKey, TRASH_KEEP_MS } = require("../utils/junctionRelease");
 
 exports.confirmAdminPasswordHandler = catchAsync(async (req, res) => {
   const { password, reason } = req.body;
@@ -239,8 +246,10 @@ exports.restoreUserDeviceByAdminHandler = catchAsync(async (req, res) => {
     });
   }
 
+  // deleteAt is when the link is released (see cronJobs.js): 30 days from now,
+  // the same as when the person moves it to trash themselves.
   device.isTrash = restoreDevice ? false : true;
-  device.deleteAt = restoreDevice ? null : new Date();
+  device.deleteAt = restoreDevice ? null : new Date(Date.now() + TRASH_KEEP_MS);
 
   await device.save();
 
@@ -369,5 +378,39 @@ exports.assignDeviceByAdminHandler = catchAsync(async (req, res, next) => {
     status: "success",
     message: `Device with ID ${deviceId} assigned successfully to ${ownerEmail}.`,
     data: unassignedDevice,
+  });
+});
+
+// Saved timing kept with a junction in Quadrum's pool (from removed accounts).
+exports.getJunctionLibraryHandler = catchAsync(async (req, res) => {
+  const { deviceId } = req.params;
+  const device = await AdminDevice.findOne({ deviceId }).lean();
+  if (!device) {
+    return res.status(404).json({
+      status: "error",
+      message: `Device with ID ${deviceId} does not exist.`,
+    });
+  }
+  const key = poolKey(device.deviceDepartment);
+  const [phases, patterns, plans] = await Promise.all([
+    UserPhase.findOne({ email: key }).lean(),
+    UserPattern.findOne({ email: key }).lean(),
+    UserPlan.findOne({ email: key }).lean(),
+  ]);
+  const forJunction = (doc, field) =>
+    ((doc && doc[field]) || []).filter((item) => item.deviceId === deviceId);
+  const pick = (items, extra = () => ({})) =>
+    items.map((item) => ({ name: item.name, ...extra(item) }));
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      deviceId,
+      phases: pick(forJunction(phases, "phases")),
+      patterns: pick(forJunction(patterns, "patterns"), (p) => ({
+        steps: (p.configuredPhases || []).length,
+      })),
+      plans: pick(forJunction(plans, "plans"), (p) => ({ dayType: p.dayType })),
+    },
   });
 });
