@@ -219,6 +219,26 @@ section.band { padding: 64px 0; border-top: 1px solid var(--line); }
 .board b { font: 800 1.05rem/1.25 var(--font-display); color: var(--ink); }
 .ver { font: 600 0.72rem/1 var(--font-mono); color: var(--muted); letter-spacing: 0.06em; margin-left: 6px; }
 
+/* Animated scenes (assets/scenes.js): a dark road drawing in any theme */
+.scene { margin: 0 0 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 10px; }
+.scene-svg { aspect-ratio: 16 / 9; background: #0d1115; border-radius: 8px; overflow: hidden; }
+.scene-svg svg { display: block; width: 100%; height: 100%; }
+.scene figcaption { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; color: var(--muted); font-size: 0.92rem; }
+.scene figcaption b { color: var(--ink); }
+.scene-failed .scene-svg { display: none; }
+.scene-text { font: 600 13px var(--font-body); fill: #eef2f5; }
+.scene-text-sm { font: 600 11.5px var(--font-mono); fill: #eef2f5; }
+.scene-small { font: 400 11px var(--font-mono); fill: #a3abb5; }
+.scene-tiny { font: 400 9.5px var(--font-mono); fill: #a3abb5; }
+.scene-mono { font: 600 11px var(--font-mono); letter-spacing: 0.08em; fill: #eef2f5; }
+.scene-plate { font: 800 14px var(--font-mono); letter-spacing: 0.04em; fill: #121821; }
+.scene-kpi { font: 800 22px var(--font-display); fill: #eef2f5; }
+.scene-tag { font: 700 8.5px var(--font-mono); fill: #121821; }
+.scene-teal { fill: #4cc6d4; }
+.scene-red { fill: #ec5a4c; }
+.access-line { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+@media (max-width: 640px) { .scene figcaption { flex-direction: column; } }
+
 /* How we work */
 .about { font-size: 1.08rem; }
 .facts-line { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 6px; font: 600 0.8rem/1.5 var(--font-mono); color: var(--muted); letter-spacing: 0.04em; }
@@ -425,7 +445,7 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
     <div class="wrap">
       <div class="head">
         <h2>Products</h2>
-        <p>Two product families on one platform. Signal control keeps a junction running safely on its own. Enforcement and surveillance cameras are separate devices. The Traffic Monitoring System connects both, and connects your systems to them.</p>
+        <p>Two product families on one platform. Signal control keeps a junction running safely on its own. Enforcement and surveillance cameras are separate devices. The Traffic Control and Monitoring System connects both, and connects your systems to them.</p>
       </div>
 
       <h3 class="family"><span class="family-num">1</span> Traffic signal control</h3>
@@ -435,19 +455,20 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
             <svg viewBox="0 0 64 64" aria-hidden="true"><rect class="mk-ink" x="28" y="6" width="8" height="52" rx="4"/><rect class="mk-ink" x="6" y="28" width="52" height="8" rx="4"/><circle class="mk-ink" cx="32" cy="32" r="8.5"/><circle cx="32" cy="32" r="3.6" fill="#0C98AA"/><circle cx="32" cy="7" r="6" fill="#E23D33"/><circle cx="57" cy="32" r="6" fill="#F2A51A"/><circle cx="32" cy="57" r="6" fill="#1F9D55"/><circle cx="7" cy="32" r="6" fill="#0C98AA"/></svg>
           </div>
           <h3>TSLC 2.0 junction controller</h3>
-          <p>Our current controller. A backplane carries a comms card, a power card and four signal cards, one per approach, so a fault is cleared on site by swapping a card.</p>
+          <p>Our current controller. A backplane carries a comms card, a power card and one signal card for each approach, up to four, so a fault is cleared on site by swapping a card.</p>
           <ul class="feature-list">
             <li>Ethernet, Wi-Fi, 433 MHz and 2.4 GHz radio links, RS485, and a GSM option</li>
             <li>Runs on 9&ndash;36 V DC, with a solar-panel charging input</li>
             <li>Battery-backed real-time clock keeps day plans running if the network drops</li>
             <li>Inputs for pedestrian push buttons and a police panel: next, hold, manual</li>
             <li>Hardware watchdog, temperature sensor and fault buzzer</li>
+            <li>Firmware updates over the air (OTA), without opening the cabinet electronics</li>
           </ul>
-          <p class="spec">Backplane v1.0 · Comms card v1.03 · Power card v1.0 · Signal card v1.03 &times;4</p>
+          <p class="spec">Backplane v1.0 · Comms card v1.03 · Power card v1.0 · Signal card v1.03 &times; number of approaches (up to 4)</p>
         </div>
         <figure class="board-hero">
-          <img src="assets/tslc2-backplane.webp" width="1200" height="499" alt="3D render of the TSLC 2.0 backplane: field terminals on the left, then slots for the comms card, the power card and four signal cards">
-          <figcaption>Backplane: field terminals, then slots for the comms card, the power card and four signal cards.</figcaption>
+          <img src="assets/tslc2-backplane.webp" width="1200" height="499" alt="3D render of the TSLC 2.0 backplane: field terminals on the left, then slots for the comms card, the power card and up to four signal cards">
+          <figcaption>Backplane: field terminals, then slots for the comms card, the power card and up to four signal cards.</figcaption>
         </figure>
       </article>
 
@@ -458,7 +479,7 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
         </figure>
         <figure class="board">
           <img src="assets/tslc2-signal-card.webp" width="900" height="298" alt="3D render of a TSLC 2.0 signal card: lamp driver ICs, a rotary address switch and the backplane connector" loading="lazy">
-          <figcaption><b>Signal card<span class="ver">v1.03 &times;4</span></b><span>Switches the lamps for one approach. Its rotary switch sets the direction: north, east, south or west.</span></figcaption>
+          <figcaption><b>Signal card<span class="ver">v1.03 · one per approach</span></b><span>Switches the lamps for one approach. Its rotary switch sets the direction: north, east, south or west.</span></figcaption>
         </figure>
         <figure class="board">
           <img src="assets/tslc2-power-card.webp" width="900" height="295" alt="3D render of the TSLC 2.0 power card: three switching regulators with inductors and the backplane connector" loading="lazy">
@@ -466,6 +487,11 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
         </figure>
       </div>
 
+
+      <figure class="scene" data-scene="cycle" data-label="Animation: a four-way junction seen from above runs a four-phase cycle. North-south left turns, then north-south through traffic, then east-west left turns, then east-west through traffic, each followed by amber and all-red. Cars queue at the stop lines on red and move through on green.">
+        <div class="scene-svg"></div>
+        <figcaption><span><b>What the controller does today.</b> The plan from the chart above, running: leading left turns, amber 3 s, all-red 2 s, shown six times faster.</span><button type="button" class="mini scene-play">Pause</button></figcaption>
+      </figure>
       <p class="family-note"><b>Connects to:</b> pedestrian push buttons and a police panel today; vehicle detector inputs next; a wired red-signal output for an enforcement camera at the same junction.</p>
 
       <h3 class="family"><span class="family-num">2</span> Enforcement and surveillance</h3>
@@ -486,21 +512,35 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
         </article>
       </div>
 
+
+      <figure class="scene" data-scene="enforcement" data-label="Animation: one approach to a junction with a radar and number-plate camera on a pole. The radar counts vehicles in its zone and the controller extends the green while traffic keeps arriving. When the signal turns red, a driver crosses the stop line and the camera records the plate, the time and how long the light had been red.">
+        <div class="scene-svg"></div>
+        <figcaption><span><b>Detection, actuation and enforcement.</b> The radar tells the controller when traffic is still arriving, so green lasts as long as it&rsquo;s needed. On red, the camera takes the signal state over a wire and records the plate. Concept, in development.</span><button type="button" class="mini scene-play">Pause</button></figcaption>
+      </figure>
+
       <h3 class="family"><span class="family-num">3</span> The platform that connects them</h3>
       <div class="cards">
         <article class="card">
           <div class="tag-row"><span class="chip">Traffic · Platform</span></div>
-          <h3>Traffic Monitoring System</h3>
-          <p>Every junction on one screen, in the browser, at app.quadrumtechnologies.com.</p>
+          <h3>Traffic Control and Monitoring System</h3>
+          <p>Every junction on one screen, in the browser, at <a href="https://app.quadrumtechnologies.com/login">app.quadrumtechnologies.com</a>.</p>
           <ul>
             <li>Live signal state and controller health</li>
             <li>Phases, patterns and day plans, with special dates</li>
             <li>Send plans and take manual control remotely</li>
+            <li>Client admins, operators and viewers, each with their own rights</li>
             <li>Audit log of every change</li>
           </ul>
-          <p class="spec">Next release: client organisations with their own users and roles</p>
+          <p class="access-line"><a class="btn solid" href="https://app.quadrumtechnologies.com/login">Sign in</a><a class="btn ghost" href="https://app.quadrumtechnologies.com/request-access">Request access</a><a class="btn ghost" href="https://app.quadrumtechnologies.com/request-access?purpose=demo">Try the demo</a></p>
+          <p class="spec">Sign-in needs an account set up by Quadrum or your organisation. Next release: client organisations, and remote firmware updates from the platform, staged and reversible.</p>
         </article>
       </div>
+
+
+      <figure class="scene" data-scene="room" data-label="Animation: a control room. An operator faces a video wall with a map of junctions and their status, a live camera with plate reads, and the day's figures: red-light violations, fines issued, watchlist hits and average delay. A stolen-vehicle hit raises an alert for the police desk.">
+        <div class="scene-svg"></div>
+        <figcaption><span><b>The control room.</b> Every junction&rsquo;s status, plate reads with red-light, papers and watchlist checks, alerts for the police desk, and the day&rsquo;s fines for the agency. Illustration with example figures.</span><button type="button" class="mini scene-play">Pause</button></figcaption>
+      </figure>
 
       <div class="flow" role="group" aria-label="How devices, the platform and your systems connect">
         <div class="flow-col">
@@ -520,7 +560,7 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
         <div class="wire"><span>API and webhooks, per-partner keys</span></div>
         <div class="flow-col">
           <h4>Who uses it</h4>
-          <div class="node"><b>Your dashboard</b><span>app.quadrumtechnologies.com</span></div>
+          <div class="node"><b>Your dashboard</b><span><a href="https://app.quadrumtechnologies.com/login">app.quadrumtechnologies.com</a></span></div>
           <div class="node planned"><b>Agency and partner systems</b><span>Evidence, counts and alerts through the API</span></div>
         </div>
       </div>
@@ -641,7 +681,7 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
         <dt>Phone</dt>
         <dd>Lanre<span class="sep" aria-hidden="true"></span><a href="tel:+2348029717362">+234 802 971 7362</a></dd>
         <dt>Clients</dt>
-        <dd>Sign in at <a href="https://app.quadrumtechnologies.com/login">app.quadrumtechnologies.com</a></dd>
+        <dd>Sign in or <a href="https://app.quadrumtechnologies.com/request-access">request access</a> at <a href="https://app.quadrumtechnologies.com/login">app.quadrumtechnologies.com</a></dd>
       </dl>
     </div>
   </section>
@@ -724,5 +764,6 @@ footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
   });
 })();
 </script>
+<script src="assets/scenes.js?v=20261114" defer></script>
 </body>
 </html>
