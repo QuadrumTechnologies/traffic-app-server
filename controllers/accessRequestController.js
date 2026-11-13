@@ -8,7 +8,7 @@ const { inviteAccount } = require("./adminUsersController");
 
 const PURPOSES = {
   demo: "Try the demo",
-  access: "Access for junctions we bought",
+  access: "Help setting up my account",
   buy: "Buy or get a quote",
   partner: "Partner or integration",
 };
