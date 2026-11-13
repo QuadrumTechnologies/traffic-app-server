@@ -107,7 +107,7 @@ async function moveLibraryToPool(email, fallbackDepartment) {
   return { counts, departments: [...departments] };
 }
 
-// Junctions bought under `email` in this department go back to stock.
+// Controllers bought under `email` in this department go back to stock.
 async function returnPurchasesToStock(email, department) {
   const devices = await AdminDevice.find({ deviceDepartment: department });
   const restocked = [];

@@ -142,7 +142,7 @@ class Email {
   async sendDeviceAssignmentNotification({ deviceId }) {
     await this.send(
       generateDeviceAssignmentHTML(this.firstName, deviceId),
-      "Device Assignment"
+      "A controller is ready to add to your account"
     );
   }
 }

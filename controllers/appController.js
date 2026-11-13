@@ -22,13 +22,13 @@ exports.getDeviceDetailById = catchAsync(async (req, res, next) => {
   if (!existingDevice) {
     return res.status(400).json({
       status: "error",
-      message: `Invalid Device ID: ${deviceId}.`,
+      message: `No controller has device ID ${deviceId}. Check the ID on its label.`,
     });
   }
   if (existingDevice.deviceStatus.status !== "purchased") {
     return res.status(400).json({
       status: "error",
-      message: `Device with ID ${deviceId} has not been purchased.`,
+      message: `Controller ${deviceId} isn't assigned to a buyer yet. Ask Quadrum to assign it to your email.`,
     });
   }
 
@@ -38,7 +38,7 @@ exports.getDeviceDetailById = catchAsync(async (req, res, next) => {
   ) {
     return res.status(403).json({
       status: "error",
-      message: `You are not authorized to access device with ID ${deviceId}.`,
+      message: `Controller ${deviceId} is assigned to a different email. Sign in with the email it was bought with, or ask Quadrum to move it.`,
     });
   }
 
@@ -72,18 +72,18 @@ exports.addDeviceByUserHandler = catchAsync(async (req, res, next) => {
   if (!recognizedDevice) {
     return res.status(400).json({
       status: "error",
-      message: `Device with ID ${deviceId} is not recognized by admin.`,
+      message: `No controller has device ID ${deviceId}. Check the ID on its label.`,
     });
   }
 
   if (existingDevice) {
     return res.status(400).json({
       status: "error",
-      message: `Device with ID ${deviceId} already exists.`,
+      message: `Controller ${deviceId} has already been added to an account.`,
     });
   }
 
-  // Only the buyer Quadrum assigned it to can add a junction, so nobody can
+  // Only the buyer Quadrum assigned it to can add the controller, so nobody can
   // claim a unit by typing its ID.
   const sale = recognizedDevice.deviceStatus || {};
   if (
@@ -93,7 +93,7 @@ exports.addDeviceByUserHandler = catchAsync(async (req, res, next) => {
   ) {
     return res.status(403).json({
       status: "error",
-      message: `Junction ${deviceId} isn't assigned to ${req.user.email}. Ask Quadrum to assign it to you first.`,
+      message: `Controller ${deviceId} isn't assigned to ${req.user.email}. Ask Quadrum to assign it to you first.`,
     });
   }
 
@@ -107,7 +107,7 @@ exports.addDeviceByUserHandler = catchAsync(async (req, res, next) => {
 
   res.status(201).json({
     status: "success",
-    message: `Device with ID ${deviceId} added successfully.`,
+    message: `Controller ${deviceId} added. Its junction is on your list.`,
     data: { ...newDevice.toObject(), secretKey: undefined },
   });
 });
