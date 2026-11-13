@@ -16,15 +16,13 @@ const {
   deviceStateHandler,
   stateDataRequestHandler,
 } = require("./handlers/stateHandler");
-const {
-  intersectionControlRequestHandler,
-} = require("./handlers/intersectionControlHandler");
 const { uploadRequestHandler } = require("./handlers/uploadHandler");
 const { downloadRequestHandler } = require("./handlers/downloadHandler");
 const {
   uploadAndDownloadHandler,
 } = require("./handlers/uploadAndDownloadHandler");
-const { manualControlHandler } = require("./handlers/manualHandler");
+const junctionCommands = require("./handlers/junctionCommandHandler");
+const { AuditLog } = require("./models/auditModel");
 const { UserDevice, UserDeviceState } = require("./models/appModel");
 const { AdminDevice } = require("./models/adminAppModel");
 const { setDeviceOnline } = require("./handlers/deviceStatusNotifiesHandler");
@@ -36,14 +34,19 @@ const { deviceRecord, canAccessDevice, roleOf } = require("./utils/deviceAccess"
 const WEB_REQUESTS = {
   state_request: { handler: stateDataRequestHandler, control: false },
   info_request: { handler: infoDataRequestHandler, control: false },
-  intersection_control_request: {
-    handler: intersectionControlRequestHandler,
-    control: true,
-  },
+  // Explicit commands and manual control (handlers/junctionCommandHandler.js).
+  junction_command: { handler: junctionCommands.handleCommand, control: true },
+  // The old toggle commands and the API-timed manual signals are retired:
+  // a page that still sends them is out of date.
+  intersection_control_request: { handler: retiredRequest, control: true },
+  signal_request: { handler: retiredRequest, control: true },
   upload_request: { handler: uploadRequestHandler, control: true },
   download_request: { handler: downloadRequestHandler, control: true },
-  signal_request: { handler: manualControlHandler, control: true },
 };
+
+function retiredRequest(ws) {
+  sendError(ws, "This page is out of date. Reload it to use the new junction controls.");
+}
 
 // Controllers send their secret key when they identify. Until every unit in
 // the field carries the key stored for it, a mismatch is only logged;
@@ -112,6 +115,24 @@ async function audienceFor(deviceId, requester) {
   return audience;
 }
 
+// "Data change, remote": sending timing to a controller goes in its activity.
+async function logUpload(ws, payload) {
+  try {
+    const user = ws.account.user;
+    await AuditLog.create({
+      userType: ws.account.isAdmin ? "admin" : "user",
+      email: user.email,
+      actorName: user.name,
+      endpoint: "ws upload_request",
+      deviceId: payload.DeviceID,
+      reason: `Sent timing to the controller${payload.patternName ? ` (pattern ${payload.patternName})` : ""}`,
+      status: "success",
+    });
+  } catch (error) {
+    console.error("Audit log write failed:", error.message);
+  }
+}
+
 function sendError(ws, message) {
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ event: "error", message }));
@@ -120,6 +141,7 @@ function sendError(ws, message) {
 
 function initWebSocketServer() {
   wss = new WebSocket.Server({ server: httpsServer, path: "/ws" });
+  junctionCommands.init({ wss, audienceFor });
 
   const keepAlive = setInterval(() => {
     wss.clients.forEach((client) => {
@@ -218,6 +240,8 @@ function initWebSocketServer() {
 
           const audience = await audienceFor(deviceId, ws);
           route.handler(ws, audience, payload);
+          if (data.event === "state_request") junctionCommands.sendLease(ws, deviceId);
+          if (data.event === "upload_request") logUpload(ws, payload);
           return;
         }
 
@@ -259,6 +283,9 @@ function initWebSocketServer() {
             });
             // Set device online immediately
             await setDeviceOnline(deviceId, wss, timeoutMap);
+            junctionCommands.onDeviceIdentify(deviceId).catch((e) =>
+              console.error("Lease check on identify failed:", e.message)
+            );
             return;
           }
 
@@ -271,6 +298,7 @@ function initWebSocketServer() {
           }
 
           const audience = await audienceFor(param.DeviceID);
+          junctionCommands.onDeviceActivity(param.DeviceID);
           switch (data.Type) {
             case "info":
               infoDataHandler(ws, audience, param);
@@ -280,6 +308,7 @@ function initWebSocketServer() {
               break;
             case "state":
               deviceStateHandler(ws, audience, param);
+              junctionCommands.onDeviceState(param.DeviceID, param);
               break;
             case "prog":
               uploadAndDownloadHandler(ws, audience, param);

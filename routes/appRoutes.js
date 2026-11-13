@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const appController = require("../controllers/appController");
+const junctionActivity = require("../controllers/junctionActivityController");
 
 const { authenticateUser } = require("../controllers/authController");
 const {
@@ -20,6 +21,14 @@ router.get(
   authenticateAny,
   requireDeviceAccess("deviceID"),
   appController.getDeviceStateByDeviceIDHandler
+);
+
+// A junction's activity: commands, manual control and timing sent.
+router.get(
+  "/junctions/:deviceID/activity",
+  authenticateAny,
+  requireDeviceAccess("deviceID"),
+  junctionActivity.getJunctionActivity
 );
 
 // Junction link details: the owner, or an admin of the junction's department
