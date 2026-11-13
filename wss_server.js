@@ -1,4 +1,5 @@
-const { createServer } = require("https");
+const https = require("https");
+const http = require("http");
 const WebSocket = require("ws");
 const fs = require("fs");
 require("dotenv").config();
@@ -28,18 +29,38 @@ const { UserDevice, UserDeviceState } = require("./models/appModel");
 const { AdminDevice } = require("./models/adminAppModel");
 const { setDeviceOnline } = require("./handlers/deviceStatusNotifiesHandler");
 
-const PORT = 443;
+// TLS is on by default: the EC2 setup served HTTPS on 443 with the
+// Let's Encrypt certificate. Set TLS=off to serve plain HTTP on PORT
+// (default 5000) instead, e.g. behind a Cloudflare Tunnel that terminates TLS.
+const TLS_ENABLED = String(process.env.TLS || "on").toLowerCase() !== "off";
+const PORT = TLS_ENABLED
+  ? Number(process.env.HTTPS_PORT) || 443
+  : Number(process.env.PORT) || 5000;
+// Optional bind address, e.g. HOST=127.0.0.1 when only a local tunnel connects.
+const HOST = process.env.HOST || undefined;
+const TLS_KEY_PATH =
+  process.env.TLS_KEY_PATH ||
+  "/etc/letsencrypt/live/traffic-api.quadrumtechnologies.com/privkey.pem";
+const TLS_CERT_PATH =
+  process.env.TLS_CERT_PATH ||
+  "/etc/letsencrypt/live/traffic-api.quadrumtechnologies.com/fullchain.pem";
 
-const options = {
-  key: fs.readFileSync(
-    "/etc/letsencrypt/live/traffic-api.quadrumtechnologies.com/privkey.pem"
-  ),
-  cert: fs.readFileSync(
-    "/etc/letsencrypt/live/traffic-api.quadrumtechnologies.com/fullchain.pem"
-  ),
-};
+// Keep-alive ping for dashboard (web_app) sockets. Proxies such as
+// Cloudflare close WebSockets that carry no data for ~100 s. Browsers answer
+// pings automatically. Controllers are not pinged: they ping the server
+// themselves every few seconds.
+const WS_KEEPALIVE_MS = Number(process.env.WS_KEEPALIVE_MS) || 30000;
 
-const httpsServer = createServer(options, app);
+// The name httpsServer is kept for a small diff; with TLS=off it is plain HTTP.
+const httpsServer = TLS_ENABLED
+  ? https.createServer(
+      {
+        key: fs.readFileSync(TLS_KEY_PATH),
+        cert: fs.readFileSync(TLS_CERT_PATH),
+      },
+      app
+    )
+  : http.createServer(app);
 
 let wss;
 
@@ -47,6 +68,18 @@ const timeoutMap = new Map();
 
 function initWebSocketServer() {
   wss = new WebSocket.Server({ server: httpsServer, path: "/ws" });
+
+  const keepAlive = setInterval(() => {
+    wss.clients.forEach((client) => {
+      if (
+        client.clientType === "web_app" &&
+        client.readyState === WebSocket.OPEN
+      ) {
+        client.ping();
+      }
+    });
+  }, WS_KEEPALIVE_MS);
+  wss.on("close", () => clearInterval(keepAlive));
 
   wss.on("connection", (ws) => {
     console.log("A client is connected");
@@ -183,8 +216,13 @@ function initWebSocketServer() {
 connectToMongoDB()
   .then(() => {
     console.log("Connection to MongoDB is successful.");
-    httpsServer.listen(PORT, () => {
-      console.log("Secure websocket server running on port ->", PORT);
+    httpsServer.listen(PORT, HOST, () => {
+      console.log(
+        TLS_ENABLED
+          ? "Secure websocket server running on port ->"
+          : "Websocket server (plain HTTP, TLS=off) running on port ->",
+        PORT
+      );
       initWebSocketServer();
     });
   })

@@ -19,10 +19,25 @@ const GlobalErrorHandler = require("./controllers/errorController");
 // App Initialization
 const app = express();
 
-const allowedOrigins = [
+// Behind a proxy (e.g. Cloudflare Tunnel) every request arrives from the proxy,
+// so the rate limiter would see one IP for all users. TRUST_PROXY=1 makes
+// Express take the client IP from X-Forwarded-For (one trusted hop).
+if (process.env.TRUST_PROXY) {
+  app.set("trust proxy", Number(process.env.TRUST_PROXY) || 1);
+}
+
+// Browser origins allowed to call the API. CORS_ORIGINS (comma-separated)
+// replaces the default list, e.g. to add a new dashboard hostname:
+// CORS_ORIGINS=https://traffic-signal.quadrumtechnologies.com,https://app.quadrumtechnologies.com
+const DEFAULT_ORIGINS = [
   "http://localhost:3000",
   "https://traffic-signal.quadrumtechnologies.com",
 ];
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean)
+  : DEFAULT_ORIGINS;
 
 app.use(
   cors({

@@ -1,9 +1,11 @@
 name: Deploy to AWS EC2
 
+# Paused: the API moved from EC2 to the Raspberry Pi behind Cloudflare Tunnel
+# (13 Nov 2026), and EC2 is being shut down. Pushing to main no longer
+# deploys anywhere. The job can still be run by hand from the Actions tab.
+# A deploy job for the Pi replaces this one later.
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   deploy:
