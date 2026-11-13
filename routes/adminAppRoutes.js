@@ -2,8 +2,34 @@ const express = require("express");
 const router = express.Router();
 const adminAppController = require("../controllers/adminAppController");
 const { authenticateAdminUser } = require("../controllers/adminAuthController");
+const { AdminDevice } = require("../models/adminAppModel");
 
 router.use(authenticateAdminUser);
+
+// An admin works only on devices of their own department.
+router.param("deviceId", async (req, res, next, deviceId) => {
+  try {
+    const device = await AdminDevice.findOne({ deviceId }).lean();
+    if (device && device.deviceDepartment !== req.user.department) {
+      return res.status(403).json({
+        status: "error",
+        message: `Device ${deviceId} belongs to another department.`,
+      });
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+router.param("deviceDepartment", (req, res, next, deviceDepartment) => {
+  if (deviceDepartment !== req.user.department) {
+    return res.status(403).json({
+      status: "error",
+      message: "You can only list devices of your own department.",
+    });
+  }
+  next();
+});
 
 router.post("/devices", adminAppController.addDeviceByAdminHandler);
 router.delete(

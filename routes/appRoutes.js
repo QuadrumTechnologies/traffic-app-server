@@ -3,12 +3,29 @@ const router = express.Router();
 const appController = require("../controllers/appController");
 
 const { authenticateUser } = require("../controllers/authController");
+const {
+  authenticateAny,
+  requireDeviceAccess,
+} = require("../controllers/deviceAccessController");
 
-router.get("/devices/:deviceId/:email", appController.getDeviceDetailById);
-router.get("/info/:deviceID", appController.getDeviceInfoByDeviceIDHandler);
-router.get("/state/:deviceID", appController.getDeviceStateByDeviceIDHandler);
+// Junction info and state: the device's owner, or an admin of its department.
+router.get(
+  "/info/:deviceID",
+  authenticateAny,
+  requireDeviceAccess("deviceID"),
+  appController.getDeviceInfoByDeviceIDHandler
+);
+router.get(
+  "/state/:deviceID",
+  authenticateAny,
+  requireDeviceAccess("deviceID"),
+  appController.getDeviceStateByDeviceIDHandler
+);
 
 router.use(authenticateUser);
+
+// The :email segment is kept for older dashboards; the signed-in user is used.
+router.get("/devices/:deviceId/:email", appController.getDeviceDetailById);
 
 router.post("/devices", appController.addDeviceByUserHandler);
 router.get("/devices", appController.getAllDeviceByUserHandler);

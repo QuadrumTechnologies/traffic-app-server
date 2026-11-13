@@ -64,14 +64,10 @@ exports.confirmAdminPasswordHandler = catchAsync(async (req, res) => {
 
 exports.addDeviceByAdminHandler = catchAsync(async (req, res, next) => {
   console.log("Adding device", req.body);
-  const {
-    deviceId,
-    deviceType,
-    adminEmail,
-    deviceStatus,
-    ownerEmail,
-    purchasedDate,
-  } = req.body;
+  const { deviceId, deviceType, deviceStatus, ownerEmail, purchasedDate } =
+    req.body;
+  // The signed-in admin, not the request body, decides the department.
+  const adminEmail = req.user.email;
 
   if (!deviceId || !deviceType || !adminEmail) {
     return res.status(400).json({
@@ -88,7 +84,8 @@ exports.addDeviceByAdminHandler = catchAsync(async (req, res, next) => {
     });
   }
 
-  const department = adminEmail.slice(0, adminEmail.indexOf("@"));
+  const department =
+    req.user.department || adminEmail.slice(0, adminEmail.indexOf("@"));
   if (deviceStatus.value === "purchased" && (!ownerEmail || !purchasedDate)) {
     return res.status(400).json({
       status: "error",

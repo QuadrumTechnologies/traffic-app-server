@@ -290,18 +290,11 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 });
 
 exports.deactivateAccount = catchAsync(async (req, res, next) => {
-  const { email } = req.body;
-  const user = await User.findOne({ email });
-
-  if (!user) {
-    return res.status(404).json({
-      status: "error",
-      message: `No user found with the email ${email}. Please check the email and try again.`,
-    });
-  }
+  // Runs after authenticateUser: only the signed-in user's own account.
+  const user = req.user;
 
   user.active = false;
-  await user.save();
+  await user.save({ validateBeforeSave: false });
   return res.status(200).json({
     status: "success",
     message: "Account deactivated successfully. You can reactivate it anytime.",
@@ -368,7 +361,7 @@ exports.reactivateAccount = catchAsync(async (req, res, next) => {
   }
 
   user.active = true;
-  await user.save();
+  await user.save({ validateBeforeSave: false });
   return res.status(200).json({
     status: "success",
     message: "Account reactivated successfully. You can now log in.",
