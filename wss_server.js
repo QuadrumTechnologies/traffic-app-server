@@ -28,6 +28,8 @@ const { AdminDevice } = require("./models/adminAppModel");
 const { setDeviceOnline } = require("./handlers/deviceStatusNotifiesHandler");
 const { resolveToken } = require("./utils/authTokens");
 const { deviceRecord, canAccessDevice, roleOf } = require("./utils/deviceAccess");
+const { isDemoDevice, isDemoAccount } = require("./utils/demo");
+const demoJunction = require("./handlers/demoJunction");
 
 // Dashboard requests: handler, and whether the request operates the junction
 // (an admin may only operate a user's device if the owner allows support).
@@ -103,6 +105,10 @@ async function audienceFor(deviceId, requester) {
       return;
     }
     if (client.clientType !== "web_app" || !client.account || !record) return;
+    if (isDemoAccount(client.account)) {
+      if (isDemoDevice(deviceId)) audience.push(client);
+      return;
+    }
     const email = String(client.account.user.email || "").toLowerCase();
     const isOwner =
       Boolean(record.ownerEmail) && record.ownerEmail.toLowerCase() === email;
@@ -217,6 +223,13 @@ function initWebSocketServer() {
 
           const payload = data.payload || {};
           const deviceId = payload.DeviceID;
+          if (
+            isDemoAccount(ws.account) &&
+            (data.event === "upload_request" || data.event === "download_request")
+          ) {
+            sendError(ws, "The demo junction runs a fixed plan. Sending timing is for real junctions.");
+            return;
+          }
           const allowed = await canAccessDevice(ws.account, deviceId, {
             control: route.control,
           });
@@ -368,6 +381,10 @@ connectToMongoDB()
         PORT
       );
       initWebSocketServer();
+      // The demo junction (Try the demo). DEMO_JUNCTION=off leaves it out.
+      if (String(process.env.DEMO_JUNCTION || "on").toLowerCase() !== "off") {
+        demoJunction.start({ wss }).catch((e) => console.error("Demo junction failed to start:", e.message));
+      }
     });
   })
   .catch((error) => {

@@ -14,6 +14,7 @@ const appRouter = require("./routes/appRoutes");
 const adminAppRouter = require("./routes/adminAppRoutes");
 const adminUsersRouter = require("./routes/adminUsersRoutes");
 const accessRequestRoutes = require("./routes/accessRequestRoutes");
+const demoRoutes = require("./routes/demoRoutes");
 
 // Utils
 const GlobalErrorHandler = require("./controllers/errorController");
@@ -88,6 +89,8 @@ app.use("/api/v1/auth/admin", adminAuthRouter);
 app.use("/api/v1/admin/users", adminUsersRouter);
 app.use("/api/v1/admin/access-requests", accessRequestRoutes.adminRouter);
 app.use("/api/v1/access-requests", accessRequestRoutes.publicRouter);
+app.use("/api/v1/admin/demo-leads", demoRoutes.adminRouter);
+app.use("/api/v1/demo", demoRoutes.publicRouter);
 app.use("/api/v1/admin", adminAppRouter);
 app.use("/api/v1", appRouter);
 

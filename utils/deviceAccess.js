@@ -1,5 +1,6 @@
 const { AdminDevice } = require("../models/adminAppModel");
 const { UserDevice } = require("../models/appModel");
+const { isDemoDevice, isDemoAccount } = require("./demo");
 
 // Owner and department of a device, cached briefly: devices report every few
 // seconds and each report is fanned out to the dashboards allowed to see it.
@@ -41,6 +42,8 @@ function roleOf(user) {
 
 async function canAccessDevice(account, deviceId, { control = false } = {}) {
   if (!account || !account.user || !deviceId) return false;
+  // Demo visitors: the demo junction and nothing else. (Nobody else is its owner.)
+  if (isDemoAccount(account)) return isDemoDevice(deviceId);
   const record = await deviceRecord(deviceId);
   if (!record) return false;
 

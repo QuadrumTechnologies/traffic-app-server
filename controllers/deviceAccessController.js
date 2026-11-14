@@ -11,6 +11,9 @@ exports.authenticateAny = catchAsync(async (req, res, next) => {
       message: "Please log in to continue.",
     });
   }
+  if (account.isDemo && req.method !== "GET") {
+    return res.status(403).json({ status: "error", message: "That isn't part of the demo." });
+  }
   req.user = account.user;
   req.isAdmin = account.isAdmin;
   next();

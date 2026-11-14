@@ -12,6 +12,8 @@ const User = require("../models/userModel");
 const catchAsync = require("../utils/catchAsync");
 const Email = require("../utils/email");
 const { generateSecretKey } = require("../utils/misc");
+const { DEMO_DEVICE_ID, DEMO_PHASES, demoDeviceListing, demoPatterns } = require("../utils/demo");
+const { isDeviceOnline } = require("../handlers/deviceStatusNotifiesHandler");
 
 exports.getDeviceDetailById = catchAsync(async (req, res, next) => {
   console.log("Getting device detail by user");
@@ -113,7 +115,14 @@ exports.addDeviceByUserHandler = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllDeviceByUserHandler = catchAsync(async (req, res, next) => {
-  // console.log("Getting all devices by user", req.user.email);
+  if (req.user.isDemo) {
+    const info = await UserDeviceInfo.findOne({ DeviceID: DEMO_DEVICE_ID }).select("-JunctionPassword").lean();
+    return res.status(200).json({
+      status: "success",
+      message: "The demo junction.",
+      data: { devices: [Object.assign(demoDeviceListing(info), { online: isDeviceOnline(DEMO_DEVICE_ID) })] },
+    });
+  }
 
   const devices = await UserDevice.find({
     email: req.user.email,
@@ -132,7 +141,7 @@ exports.getAllDeviceByUserHandler = catchAsync(async (req, res, next) => {
       const info = await UserDeviceInfo.findOne({
         DeviceID: device.deviceId,
       }).lean();
-      return { ...device, info: info || null };
+      return { ...device, info: info || null, online: isDeviceOnline(device.deviceId) };
     })
   );
 
@@ -241,7 +250,15 @@ exports.updatePhaseByUserHandler = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllPhaseByUserHandler = catchAsync(async (req, res, next) => {
-  // console.log("Getting Phase by user", req.user);
+  if (req.user.isDemo) {
+    return res.status(200).json({
+      status: "success",
+      message: "The demo junction's stages.",
+      data: {
+        phases: DEMO_PHASES.map((p, i) => ({ _id: `demo-${i + 1}`, name: p.name, signalString: p.signalString, deviceId: DEMO_DEVICE_ID })),
+      },
+    });
+  }
   const phases = await UserPhase.findOne({ email: req.user.email });
 
   if (!phases || phases.phases.length === 0) {
@@ -399,6 +416,9 @@ exports.addPatternByUserHandler = catchAsync(async (req, res) => {
 });
 
 exports.getAllPatternsByUserHandler = catchAsync(async (req, res, next) => {
+  if (req.user.isDemo) {
+    return res.status(200).json({ status: "success", message: "The demo plan.", data: { patterns: demoPatterns() } });
+  }
   const email = req.user.email;
 
   // Fetch all user patterns
@@ -738,7 +758,9 @@ exports.updatePlanByUserHandler = catchAsync(async (req, res) => {
 });
 
 exports.getAllPlansByUserHandler = catchAsync(async (req, res, next) => {
-  console.log("Getting all plans by user", req.user);
+  if (req.user.isDemo) {
+    return res.status(200).json({ status: "success", message: "The demo runs one plan all day.", data: { plans: [] } });
+  }
   const userPlan = await UserPlan.findOne({ email: req.user.email });
 
   if (!userPlan || userPlan.plans.length === 0) {

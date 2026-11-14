@@ -5,6 +5,8 @@ const AppError = require("../utils/appError");
 const Email = require("../utils/email");
 const User = require("../models/userModel");
 const AdminUser = require("../models/adminUserModel");
+const { demoSessionFor } = require("../utils/authTokens");
+const { demoUser } = require("../utils/demo");
 
 const signToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -84,6 +86,21 @@ exports.authenticateUser = catchAsync(async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded && decoded.demo) {
+      const session = await demoSessionFor(decoded);
+      if (!session) {
+        return res.status(401).json({
+          status: "error",
+          message: "Your demo session has ended. Please log in or start the demo again.",
+        });
+      }
+      // The demo looks around; it doesn't change anything.
+      if (req.method !== "GET") {
+        return res.status(403).json({ status: "error", message: "That isn't part of the demo." });
+      }
+      req.user = demoUser(session);
+      return next();
+    }
     const currentUser = await User.findById(decoded.id).select("+active");
     if (!currentUser) {
       // A Quadrum admin's sign-in is valid, just not for client pages. Say so

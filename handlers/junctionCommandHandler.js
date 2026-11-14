@@ -2,6 +2,7 @@ const WebSocket = require("ws");
 const { ControlLease } = require("../models/controlLeaseModel");
 const { AuditLog } = require("../models/auditModel");
 const { roleOf } = require("../utils/deviceAccess");
+const { isDemoDevice, DEMO_IDLE_MINUTES } = require("../utils/demo");
 
 // Junction commands from the dashboard (event "junction_command").
 //
@@ -303,7 +304,10 @@ async function handleCommand(ws, audience, payload) {
   if (command === "manual_on") {
     const reason = String(payload.reason || "").trim().slice(0, 200);
     if (reason.length < 3) return refused(ws, id, deviceId, command, "Say why you're taking manual control.");
-    const minutes = IDLE_CHOICES.includes(Number(payload.minutes)) ? Number(payload.minutes) : DEFAULT_IDLE;
+    // On the shared demo junction manual control lasts 2 minutes without action.
+    const minutes = isDemoDevice(deviceId)
+      ? DEMO_IDLE_MINUTES
+      : IDLE_CHOICES.includes(Number(payload.minutes)) ? Number(payload.minutes) : DEFAULT_IDLE;
     let takeover = null;
     if (lease && !isHolder) {
       if (!canOverride(actor, lease)) {
@@ -436,7 +440,9 @@ async function tick() {
       await endLease(deviceId, `${lease.holderName}'s dashboard closed`);
       continue;
     }
-    if (idleEnd - t <= WARN_BEFORE_MS && warnedFor.get(deviceId) !== lease.lastActionAt) {
+    // A short lease (the demo's 2 minutes) is warned 30 s before its end.
+    const warnBefore = lease.idleMinutes <= 2 ? 30 * 1000 : WARN_BEFORE_MS;
+    if (idleEnd - t <= warnBefore && warnedFor.get(deviceId) !== lease.lastActionAt) {
       warnedFor.set(deviceId, lease.lastActionAt);
       await toWatchers(deviceId, {
         event: "control_lease_warning",
