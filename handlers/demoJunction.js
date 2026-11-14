@@ -169,6 +169,10 @@ function createController(phases = DEMO_PHASES, amberS = DEMO_AMBER_S) {
       Hold: "false",
       Reboot: "false",
       Reset: "false",
+      // Required by the stored record; the API's own default for outputs.
+      SignalConfig: "active_low_cp",
+      SignalLevel: "20",
+      ErrorFlash: "false",
     };
   }
 
