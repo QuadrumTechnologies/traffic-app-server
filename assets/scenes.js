@@ -162,7 +162,9 @@
     sync();
   }
 
-  function signalHead(parent, x, y, label) {
+  // leftTo: the way the left turn goes on the drawing (N, E, S or W), so the
+  // turn arrow points where turning traffic actually goes (right-hand traffic).
+  function signalHead(parent, x, y, label, leftTo) {
     const g = el("g", { transform: `translate(${x} ${y})` }, parent);
     el("rect", { x: -8, y: -24, width: 16, height: 48, rx: 4, fill: "#090c0f", stroke: "#3a414a", "stroke-width": 1 }, g);
     const lamps = {
@@ -171,7 +173,8 @@
       G: el("circle", { cx: 0, cy: 15, r: 5, fill: C.off }, g),
     };
     const arrowBox = el("rect", { x: -8, y: 27, width: 16, height: 14, rx: 3, fill: "#090c0f", stroke: "#3a414a", "stroke-width": 1 }, g);
-    const arrow = el("path", { d: "M5 34 H-3 M-3 34 l3.5 -3.5 M-3 34 l3.5 3.5", stroke: C.off, "stroke-width": 2.2, "stroke-linecap": "round", fill: "none" }, g);
+    const turn = { W: 0, N: 90, E: 180, S: 270 }[leftTo] || 0;
+    const arrow = el("path", { d: "M4 34 H-4 M-4 34 l3.5 -3.5 M-4 34 l3.5 3.5", transform: `rotate(${turn} 0 34)`, stroke: C.off, "stroke-width": 2.2, "stroke-linecap": "round", fill: "none" }, g);
     if (label) txt(g, 0, 54, label, { "text-anchor": "middle", class: "scene-small" });
     void arrowBox;
     return {
@@ -203,10 +206,14 @@
   }
 
   function zebra(svg, x, y, w, h, vertical) {
-    const n = vertical ? Math.floor(h / 9) : Math.floor(w / 9);
+    // Stripes 5 wide, spread evenly so the crossing runs from kerb to kerb.
+    const len = vertical ? h : w;
+    const n = Math.max(2, Math.round((len + 4) / 9));
+    const pitch = (len - 5) / (n - 1);
     for (let i = 0; i < n; i++) {
-      if (vertical) el("rect", { x, y: y + i * 9 + 1, width: w, height: 5, fill: C.mark, opacity: 0.55 }, svg);
-      else el("rect", { x: x + i * 9 + 1, y, width: 5, height: h, fill: C.mark, opacity: 0.55 }, svg);
+      const o = +(i * pitch).toFixed(2);
+      if (vertical) el("rect", { x, y: y + o, width: w, height: 5, fill: C.mark, opacity: 0.55 }, svg);
+      else el("rect", { x: x + o, y, width: 5, height: h, fill: C.mark, opacity: 0.55 }, svg);
     }
   }
 
@@ -286,10 +293,10 @@
 
     // Heads on each approach (near side, right of the driver).
     const heads = {
-      SB: signalHead(svg, 312, 82, "N"),
-      NB: signalHead(svg, 488, 352, "S"),
-      EB: signalHead(svg, 262, 318, "W"),
-      WB: signalHead(svg, 538, 106, "E"),
+      SB: signalHead(svg, 312, 82, "N", "E"),
+      NB: signalHead(svg, 488, 352, "S", "W"),
+      EB: signalHead(svg, 262, 318, "W", "N"),
+      WB: signalHead(svg, 538, 106, "E", "S"),
     };
 
     // Readout and timeline.
@@ -347,14 +354,17 @@
     dash(svg, 0, 218.5, 528, 218.5, true); dash(svg, 0, 221.5, 528, 221.5, true);
     dash(svg, 736, 218.5, 800, 218.5, true); dash(svg, 736, 221.5, 800, 221.5, true);
     dash(svg, 0, 185, 528, 185); dash(svg, 0, 255, 528, 255); dash(svg, 736, 185, 800, 185); dash(svg, 736, 255, 800, 255);
-    dash(svg, 628.5, 0, 628.5, 128, true); dash(svg, 631.5, 0, 631.5, 128, true);
-    dash(svg, 628.5, 312, 628.5, 450, true); dash(svg, 631.5, 312, 631.5, 450, true);
+    dash(svg, 628.5, 0, 628.5, 118, true); dash(svg, 631.5, 0, 631.5, 118, true);
+    dash(svg, 628.5, 322, 628.5, 450, true); dash(svg, 631.5, 322, 631.5, 450, true);
+    dash(svg, 595, 0, 595, 116); dash(svg, 665, 0, 665, 116); dash(svg, 595, 324, 595, 450); dash(svg, 665, 324, 665, 450);
     el("rect", { x: 526, y: 220, width: 4, height: 70, fill: C.mark }, svg);   // eastbound stop line
     el("rect", { x: 730, y: 150, width: 4, height: 70, fill: C.mark }, svg);   // westbound stop line
-    el("rect", { x: 560, y: 126, width: 70, height: 4, fill: C.mark }, svg);   // southbound
-    el("rect", { x: 630, y: 310, width: 70, height: 4, fill: C.mark }, svg);   // northbound
+    el("rect", { x: 560, y: 116, width: 70, height: 4, fill: C.mark }, svg);   // southbound
+    el("rect", { x: 630, y: 320, width: 70, height: 4, fill: C.mark }, svg);   // northbound
     zebra(svg, 536, 153, 20, 134, true);
     zebra(svg, 704, 153, 20, 134, true);
+    zebra(svg, 563, 126, 134, 20, false);
+    zebra(svg, 563, 294, 134, 20, false);
 
     // Detection zone on the eastbound approach.
     const zone = el("g", {}, svg);
@@ -372,10 +382,10 @@
       { group: "EW", d: "M-30 272.5 H830", stop: 553, every: [3.2, 6.0] },
       { group: "EW", d: "M830 167.5 H-30", stop: 94, every: [1.3, 3.2] },
       { group: "EW", d: "M830 202.5 H-30", stop: 94, every: [1.4, 3.4] },
-      { group: "NS", d: "M577.5 -30 V480", stop: 154, every: [1.6, 3.4] },
-      { group: "NS", d: "M612.5 -30 V480", stop: 154, every: [1.8, 3.8] },
-      { group: "NS", d: "M647.5 480 V-30", stop: 164, every: [1.6, 3.4] },
-      { group: "NS", d: "M682.5 480 V-30", stop: 164, every: [1.8, 3.8] },
+      { group: "NS", d: "M577.5 -30 V480", stop: 144, every: [1.6, 3.4] },
+      { group: "NS", d: "M612.5 -30 V480", stop: 144, every: [1.8, 3.8] },
+      { group: "NS", d: "M647.5 480 V-30", stop: 154, every: [1.6, 3.4] },
+      { group: "NS", d: "M682.5 480 V-30", stop: 154, every: [1.8, 3.8] },
     ];
     const traffic = laneTraffic(svg, cars, lanes, { vmax: 160 });
     const boxes = el("g", {}, svg);
@@ -398,14 +408,28 @@
     txt(pole, -190, 32, "Radar and ANPR camera", { class: "scene-small" });
     const flash = el("circle", { cx: -30, cy: -2, r: 0, fill: "#fff", opacity: 0 }, pole);
 
-    const head = signalHead(svg, 530, 330, null);
+    const head = signalHead(svg, 530, 330, null, "N");
 
     // HUD: what the detector tells the controller.
     const hud = el("g", { transform: "translate(16 16)" }, svg);
-    el("rect", { width: 300, height: 82, rx: 8, fill: "#0b0e12", stroke: C.line }, hud);
+    const HUD_W = 360;
+    el("rect", { width: HUD_W, height: 82, rx: 8, fill: "#0b0e12", stroke: C.line }, hud);
     txt(hud, 14, 22, "DETECTOR → CONTROLLER", { class: "scene-mono scene-teal" });
     const h1 = txt(hud, 14, 44, "", { class: "scene-text" });
     const h2 = txt(hud, 14, 64, "", { class: "scene-small" });
+    // A line is set only when it changes, and is squeezed rather than run past the panel.
+    function hudSet(node, s) {
+      const v = T(s);
+      if (node.textContent === v) return;
+      node.textContent = v;
+      node.removeAttribute("textLength");
+      let w = 0;
+      try { w = node.getComputedTextLength(); } catch (e) { w = 0; }
+      if (w > HUD_W - 28) {
+        node.setAttribute("textLength", HUD_W - 28);
+        node.setAttribute("lengthAdjust", "spacingAndGlyphs");
+      }
+    }
 
     // Evidence card.
     const card = el("g", { transform: "translate(816 18)", opacity: 0 }, svg);
@@ -485,14 +509,14 @@
       const queued = inZone(lanes[0]).length + inZone(lanes[1]).length;
       head.set(signal("EW"), "off");
       if (phase === "EW_G") {
-        h1.textContent = T(`Vehicles in zone: ${queued} · green ${Math.floor(tIn)} s`);
-        h2.textContent = T(tIn < 8 ? "Minimum green 8 s" : extended > 0 && queued ? `Extending: traffic still arriving (max 20 s)` : "Gap out: no vehicle for 2 s");
+        hudSet(h1, `Vehicles in zone: ${queued} · green ${Math.floor(tIn)} s`);
+        hudSet(h2, tIn < 8 ? "Minimum green 8 s" : extended > 0 && queued ? "Extending: traffic still arriving (max 20 s)" : "Gap out: no vehicle for 2 s");
       } else if (phase.startsWith("EW")) {
-        h1.textContent = T(`Vehicles in zone: ${queued} · ${phase === "EW_A" ? "amber" : "all red"}`);
-        h2.textContent = T("Camera armed: watching the stop line");
+        hudSet(h1, `Vehicles in zone: ${queued} · ${phase === "EW_A" ? "amber" : "all red"}`);
+        hudSet(h2, "Camera armed: watching the stop line");
       } else {
-        h1.textContent = T(`Vehicles waiting: ${queued} · cross street green`);
-        h2.textContent = T("Call placed: the controller will serve this approach next");
+        hudSet(h1, `Vehicles waiting: ${queued} · cross street green`);
+        hudSet(h2, "Call placed: this approach is served next");
       }
       sweepX = (sweepX + 3) % 338;
       sweep.setAttribute("x", 170 + sweepX);
@@ -518,7 +542,7 @@
         const label = bad ? "red-light" : c.v > 30 ? `${Math.round((c.v / 160) * 52)} km/h` : "";
         b.t.setAttribute("x", (p.x - 13).toFixed(1));
         b.t.setAttribute("y", (p.y - 12).toFixed(1));
-        b.t.setAttribute("class", bad ? "scene-tiny scene-red" : "scene-tiny scene-teal");
+        b.t.setAttribute("class", bad ? "scene-tiny scene-red scene-halo" : "scene-tiny scene-teal scene-halo");
         if (b.t.textContent !== label) b.t.textContent = label;
         b.t.setAttribute("visibility", "visible");
       }));
