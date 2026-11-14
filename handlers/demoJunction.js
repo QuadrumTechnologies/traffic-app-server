@@ -233,6 +233,11 @@ async function start({ wss, now = Date.now } = {}) {
         Plan: "1",
         Period: "00:00-23:59",
         JunctionId: DEMO_JUNCTION_NAME,
+        // Required by the stored record. The password is a placeholder: the
+        // demo junction has none, and the API never sends it to browsers.
+        JunctionPassword: "demo",
+        CommunicationFrequency: "433",
+        CommunicationChannel: "1",
       },
       readings(now())
     ));
