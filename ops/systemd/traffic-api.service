@@ -1,0 +1,24 @@
+# Template for a new machine; ops/install-pi.sh installs it only where no
+# traffic-api.service exists yet. @...@ values are filled in by install-pi.sh.
+[Unit]
+Description=Quadrum traffic API (traffic-app-server)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=@APP_USER@
+WorkingDirectory=@APP_DIR@
+# Plain HTTP on localhost only; Cloudflare Tunnel brings the public traffic in.
+Environment=TLS=off
+Environment=PORT=5000
+Environment=HOST=127.0.0.1
+Environment=TRUST_PROXY=1
+# CORS_ORIGINS goes in a drop-in (traffic-api.service.d/cors.conf). Secrets
+# (DATABASE_URI, JWT_SECRET, mail) stay in .env, never in git.
+ExecStart=@NODE@ wss_server.js
+Restart=always
+RestartSec=5
+MemoryMax=300M
+
+[Install]
+WantedBy=multi-user.target

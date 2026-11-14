@@ -1,0 +1,34 @@
+name: Checks
+
+# Runs on every pull request and on main. Deploys don't happen here: the Pi
+# pulls main itself (deploy-quadrum.timer, see DEPLOY.md).
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install
+        run: npm install --omit=dev --no-audit --no-fund
+      - name: JavaScript syntax
+        run: find . -name '*.js' -not -path './node_modules/*' -print0 | xargs -0 -n1 node --check
+      - name: Shell syntax
+        run: for f in ops/*.sh; do bash -n "$f"; done
+      - name: Online/offline status
+        run: node test/status.test.js
+      - name: Backup and restore
+        run: node test/backup-restore.test.js

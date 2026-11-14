@@ -27,15 +27,21 @@ const deleteExpiredDevices = async (now = new Date()) => {
   }
 };
 
-// Every midnight.
-cron.schedule("0 0 * * *", () => deleteExpiredDevices());
+// CRON_JOBS=off skips the scheduled jobs: for a second copy of the API (a new
+// Pi being tested next to the live one) so the jobs and emails don't run twice.
+if (String(process.env.CRON_JOBS || "on").toLowerCase() === "off") {
+  console.log("Scheduled jobs are off (CRON_JOBS=off).");
+} else {
+  // Every midnight.
+  cron.schedule("0 0 * * *", () => deleteExpiredDevices());
 
-// Demo visitors: one summary a day to hello@ (who started the demo in the
-// last 24 hours), and expired demo sessions removed.
-const demo = require("./controllers/demoController");
-cron.schedule("0 8 * * *", () => demo.sendDemoSummary(), { timezone: "Africa/Lagos" });
-cron.schedule("15 * * * *", () => demo.removeExpiredDemoSessions());
+  // Demo visitors: one summary a day to hello@ (who started the demo in the
+  // last 24 hours), and expired demo sessions removed.
+  const demo = require("./controllers/demoController");
+  cron.schedule("0 8 * * *", () => demo.sendDemoSummary(), { timezone: "Africa/Lagos" });
+  cron.schedule("15 * * * *", () => demo.removeExpiredDemoSessions());
 
-console.log("Cron job for releasing expired junction links scheduled.");
+  console.log("Cron job for releasing expired junction links scheduled.");
+}
 
 module.exports = deleteExpiredDevices;

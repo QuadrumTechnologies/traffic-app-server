@@ -1,0 +1,6 @@
+[Unit]
+Description=Email the Quadrum team that %i failed
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/quadrum-alert --unit %i
