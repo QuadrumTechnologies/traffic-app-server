@@ -1,0 +1,15 @@
+[Unit]
+Description=Back up the Quadrum traffic database (ops/backup-db.js)
+Wants=network-online.target
+After=network-online.target
+OnFailure=quadrum-alert@%n.service
+
+[Service]
+Type=oneshot
+User=@APP_USER@
+WorkingDirectory=@APP_DIR@
+Environment=BACKUP_DIR=@BACKUP_DIR@
+ExecStart=@NODE@ ops/backup-db.js
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=30min

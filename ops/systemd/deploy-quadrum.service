@@ -1,0 +1,14 @@
+[Unit]
+Description=Deploy the Quadrum traffic API when main moves on GitHub
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/deploy-quadrum --auto
+TimeoutStartSec=15min
+Nice=10
+# Keep the journal to what matters: deploy output is logged at notice, the
+# routine "Starting/Finished" lines every two minutes are dropped.
+SyslogLevel=notice
+LogLevelMax=notice

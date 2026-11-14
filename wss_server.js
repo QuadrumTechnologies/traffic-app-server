@@ -24,7 +24,6 @@ const {
 const junctionCommands = require("./handlers/junctionCommandHandler");
 const { AuditLog } = require("./models/auditModel");
 const { UserDevice, UserDeviceState } = require("./models/appModel");
-const { AdminDevice } = require("./models/adminAppModel");
 const { setDeviceOnline } = require("./handlers/deviceStatusNotifiesHandler");
 const { resolveToken } = require("./utils/authTokens");
 const { deviceRecord, canAccessDevice, roleOf } = require("./utils/deviceAccess");
@@ -294,8 +293,8 @@ function initWebSocketServer() {
                 );
               }
             });
-            // Set device online immediately
-            await setDeviceOnline(deviceId, wss, timeoutMap);
+            // Online from now; the database catches up in the background.
+            setDeviceOnline(deviceId, wss, timeoutMap);
             junctionCommands.onDeviceIdentify(deviceId).catch((e) =>
               console.error("Lease check on identify failed:", e.message)
             );
@@ -341,21 +340,13 @@ function initWebSocketServer() {
       }
     });
 
-    ws.on("ping", async (buffer) => {
+    ws.on("ping", (buffer) => {
       const deviceId = buffer.toString("utf8");
 
-      // Only a controller that has identified on this socket keeps itself online.
+      // Only a controller that has identified on this socket keeps itself
+      // online. Identifying already checked that it's a known device.
       if (ws.clientType !== deviceId) return;
-
-      // Verify device exists in AdminDevice
-      const adminDevice = await AdminDevice.findOne({ deviceId });
-      if (!adminDevice) {
-        console.log(`Unknown device ping: ${deviceId}`);
-        return;
-      }
-
-      // Reset online status and timeout
-      await setDeviceOnline(deviceId, wss, timeoutMap);
+      setDeviceOnline(deviceId, wss, timeoutMap);
     });
 
     ws.on("close", () => {

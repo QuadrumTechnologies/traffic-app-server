@@ -1,0 +1,9 @@
+[Unit]
+Description=Check the Quadrum traffic API answers (restart it if not) and backups are recent
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/quadrum-watchdog
+Nice=10
+SyslogLevel=notice
+LogLevelMax=notice
