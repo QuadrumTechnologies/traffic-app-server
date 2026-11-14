@@ -13,6 +13,7 @@ const {
   generateAccessRequestNoticeHTML,
   generateAccessRequestReceivedHTML,
   generateAccessRequestDeclinedHTML,
+  generateDemoSummaryHTML,
 } = require("./emailTemplates");
 
 class Email {
@@ -97,6 +98,14 @@ class Email {
     await this.send(
       generateAccessRequestReceivedHTML(this.firstName, request),
       "We have your request · Quadrum Technologies"
+    );
+  }
+
+  // To Quadrum, once a day: who started the demo.
+  async sendDemoSummary(leads, since) {
+    await this.send(
+      generateDemoSummaryHTML(leads, since),
+      `Demo: ${leads.length} visitor${leads.length === 1 ? "" : "s"} in the last 24 hours`
     );
   }
 

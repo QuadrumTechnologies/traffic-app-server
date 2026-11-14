@@ -1,6 +1,21 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 const AdminUser = require("../models/adminUserModel");
+const { DemoSession } = require("../models/demoModel");
+const { demoUser } = require("./demo");
+
+// A demo token (see controllers/demoController.js) stands for a demo session
+// for as long as the session lasts. Returns the session or null.
+async function demoSessionFor(decoded) {
+  if (!decoded || !decoded.demo || !decoded.id) return null;
+  try {
+    const session = await DemoSession.findById(decoded.id).lean();
+    if (!session || new Date(session.expiresAt).getTime() <= Date.now()) return null;
+    return session;
+  } catch (error) {
+    return null;
+  }
+}
 
 // Users and admins sign in with tokens signed by the same JWT_SECRET, and a
 // token only carries the account id. Look the id up in both collections.
@@ -15,6 +30,11 @@ async function resolveToken(token) {
     return null;
   }
   if (!decoded || !decoded.id) return null;
+
+  if (decoded.demo) {
+    const session = await demoSessionFor(decoded);
+    return session ? { user: demoUser(session), isAdmin: false, isDemo: true } : null;
+  }
 
   const user = await User.findById(decoded.id).select("+active");
   if (user) {
@@ -35,4 +55,4 @@ function tokenFromRequest(req) {
   return req.cookies ? req.cookies.jwt : undefined;
 }
 
-module.exports = { resolveToken, tokenFromRequest };
+module.exports = { resolveToken, tokenFromRequest, demoSessionFor };

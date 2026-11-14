@@ -626,3 +626,47 @@ exports.generateAccessRequestDeclinedHTML = function (firstName, note) {
         </html>
       `;
 };
+
+// To Quadrum once a day: who started the demo in the last 24 hours.
+exports.generateDemoSummaryHTML = function (leads, since) {
+  const when = (d) =>
+    d
+      ? new Date(d).toLocaleString("en-GB", {
+          day: "numeric",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: process.env.TIMEZONE || "Africa/Lagos",
+        })
+      : "";
+  const rows = leads
+    .map(
+      (l) => `<tr>
+                        <td>${safe(l.name || "")}</td>
+                        <td>${safe(l.company || "")}</td>
+                        <td>${safe(l.contact)}</td>
+                        <td>${safe(String(l.starts || 1))}</td>
+                        <td>${safe(when(l.lastAt))}</td>
+                    </tr>`
+    )
+    .join("");
+  return `
+        <!DOCTYPE html>
+        <html>
+        <head><title>Demo visitors</title><style>${QT_EMAIL_STYLE}</style></head>
+        <body>
+            <div class="container">
+                <div class="content">
+                    <h1>Demo visitors</h1>
+                    <p>${leads.length} ${leads.length === 1 ? "person" : "people"} started the demo since ${safe(when(since))}.</p>
+                    <table>
+                        <tr><th>Name</th><th>Company</th><th>Email or phone</th><th>Starts</th><th>Last</th></tr>
+                        ${rows}
+                    </table>
+                    <p>They saw the shared demo junction only. Follow up as you see fit.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+      `;
+};

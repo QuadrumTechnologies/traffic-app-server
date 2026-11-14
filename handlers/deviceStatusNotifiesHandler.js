@@ -1,8 +1,22 @@
 const { WebSocket } = require("ws");
 const { UserDeviceState, UserDevice } = require("../models/appModel");
 const catchAsync = require("../utils/catchAsync");
+const { isDemoDevice, isDemoAccount } = require("../utils/demo");
+
+// Dashboards told about a device going on or offline: Quadrum admins, its
+// owner, and (for the demo junction) demo visitors.
+function hearsAbout(client, deviceId, ownerEmail) {
+  if (client.isAdmin || (ownerEmail && client.userEmail === ownerEmail)) return true;
+  return isDemoDevice(deviceId) && isDemoAccount(client.account);
+}
+
+// Controllers online now, so a junction list can show it from the start
+// instead of waiting for the next ping.
+const onlineNow = new Set();
+const isDeviceOnline = (deviceId) => onlineNow.has(deviceId);
 
 const setDeviceOffline = catchAsync(async (deviceId, wss, timeoutMap) => {
+  onlineNow.delete(deviceId);
   const currentTime = new Date().toISOString();
   console.log(
     "🐦‍🔥🐦‍🔥 Setting device offline:",
@@ -41,7 +55,7 @@ const setDeviceOffline = catchAsync(async (deviceId, wss, timeoutMap) => {
         client.clientType !== deviceId &&
         client.clientType === "web_app"
       ) {
-        if (client.isAdmin || client.userEmail === deviceOwnerEmail) {
+        if (hearsAbout(client, deviceId, deviceOwnerEmail)) {
           client.send(offlineMessage);
           console.log(
             "Sent offline message to client:",
@@ -62,6 +76,7 @@ const setDeviceOffline = catchAsync(async (deviceId, wss, timeoutMap) => {
 });
 
 const setDeviceOnline = catchAsync(async (deviceId, wss, timeoutMap) => {
+  onlineNow.add(deviceId);
   const currentTime = new Date().toISOString();
 
   try {
@@ -95,8 +110,7 @@ const setDeviceOnline = catchAsync(async (deviceId, wss, timeoutMap) => {
         client.clientType !== deviceId &&
         client.clientType === "web_app"
       ) {
-        if (client.isAdmin || client.userEmail === deviceOwnerEmail) {
-          console.log("Sending online status to client:", client.userEmail);
+        if (hearsAbout(client, deviceId, deviceOwnerEmail)) {
           client.send(onlineMessage);
         }
       }
@@ -119,4 +133,5 @@ const setDeviceOnline = catchAsync(async (deviceId, wss, timeoutMap) => {
 module.exports = {
   setDeviceOnline,
   setDeviceOffline,
+  isDeviceOnline,
 };
