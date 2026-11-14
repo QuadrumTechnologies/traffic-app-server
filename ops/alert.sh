@@ -30,5 +30,6 @@ cd "$APP_DIR" || exit 1
 if [ "$(id -un)" = "$APP_USER" ]; then
   printf '%s\n' "$body" | node ops/notify.js "$subject"
 else
-  printf '%s\n' "$body" | sudo -u "$APP_USER" -H node ops/notify.js "$subject"
+  printf '%s\n' "$body" | HOME="$(getent passwd "$APP_USER" | cut -d: -f6)" \
+    setpriv --reuid="$APP_USER" --regid="$(id -gn "$APP_USER")" --init-groups -- node ops/notify.js "$subject"
 fi

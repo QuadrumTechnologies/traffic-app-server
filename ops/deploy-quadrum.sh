@@ -42,8 +42,16 @@ if ! flock -n 200; then
   echo "Deploy already running. Exiting."; exit 1
 fi
 
-log() { local m; m="$(date '+%F %T')  $*"; echo "$m"; echo "$m" | sudo tee -a "$LOG_FILE" >/dev/null 2>&1 || true; }
-as_app() { if [ "$(id -un)" = "$APP_USER" ]; then "$@"; else sudo -u "$APP_USER" -H "$@"; fi; }
+log() { local m; m="$(date '+%F %T')  $*"; echo "$m"; echo "$m" >>"$LOG_FILE" 2>/dev/null || true; }
+# Run as the app user. setpriv rather than sudo: sudo writes a journal line for every
+# command, which would be thousands of lines a day from the 2-minute timer.
+APP_HOME="$(getent passwd "$APP_USER" | cut -d: -f6)"
+as_app() {
+  if [ "$(id -un)" = "$APP_USER" ]; then "$@"
+  elif command -v setpriv >/dev/null; then
+    HOME="$APP_HOME" setpriv --reuid="$APP_USER" --regid="$(id -gn "$APP_USER")" --init-groups -- "$@"
+  else runuser -u "$APP_USER" -- "$@"; fi
+}
 git_app() { as_app git -C "$APP_DIR" "$@"; }
 remember_failed() { mkdir -p "$STATE_DIR" && echo "$1" >"$STATE_DIR/failed" || true; }
 forget_failed() { rm -f "$STATE_DIR/failed" || true; }
@@ -136,7 +144,7 @@ deps_changed=0
 if git_app diff --quiet "$before" "$target" -- package.json; then :; else deps_changed=1; install_deps; fi
 
 # 4. Restart and check; roll back to the previous commit if the API does not come up.
-sudo systemctl restart "$SERVICE"
+systemctl restart "$SERVICE"
 if healthy; then
   log "health OK: $LOCAL_URL"
   code="$(curl -s -o /dev/null -m 10 -w '%{http_code}' "$PUBLIC_URL" || true)"
@@ -150,11 +158,11 @@ if healthy; then
 fi
 
 log "API did not answer within ${HEALTH_WAIT}s; rolling back to ${before:0:7}"
-journal="$(sudo journalctl -u "$SERVICE" -n 30 --no-pager 2>/dev/null || true)"
+journal="$(journalctl -u "$SERVICE" -n 30 --no-pager 2>/dev/null || true)"
 echo "$journal"
 git_app reset -q --hard "$before"
 [ "$deps_changed" = 1 ] && install_deps
-sudo systemctl restart "$SERVICE"
+systemctl restart "$SERVICE"
 remember_failed "$target"
 if healthy; then
   log "rolled back to ${before:0:7}; API is up"
