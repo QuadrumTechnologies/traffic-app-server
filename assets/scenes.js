@@ -528,7 +528,9 @@
       card.setAttribute("opacity", slide);
       // Boxes around detected vehicles, drawn from a reused pool.
       let n = 0;
-      [lanes[0], lanes[1]].forEach((l) => l.cars.forEach((c) => {
+      // Cars run front to back; a label is skipped when it would run into the
+      // label of the car ahead (about 5.7 units a character at 9.5 px mono).
+      [lanes[0], lanes[1]].forEach((l) => { let aheadX = Infinity; l.cars.forEach((c) => {
         if (c.s < 200 || c.s > 690) return;
         const bad = c.flagged;
         if (!bad && c.s > l.stop + 30) return;
@@ -539,13 +541,15 @@
         b.r.setAttribute("stroke", bad ? C.red : C.teal);
         b.r.setAttribute("visibility", "visible");
         // Speeds only for moving vehicles, so a queue doesn't stack its labels.
-        const label = bad ? "red-light" : c.v > 30 ? `${Math.round((c.v / 160) * 52)} km/h` : "";
+        let label = bad ? "red-light" : c.v > 30 ? `${Math.round((c.v / 160) * 52)} km/h` : "";
+        if (label && !bad && p.x - 13 + label.length * 5.7 > aheadX - 6) label = "";
+        if (label) aheadX = p.x - 13;
         b.t.setAttribute("x", (p.x - 13).toFixed(1));
         b.t.setAttribute("y", (p.y - 12).toFixed(1));
         b.t.setAttribute("class", bad ? "scene-tiny scene-red scene-halo" : "scene-tiny scene-teal scene-halo");
         if (b.t.textContent !== label) b.t.textContent = label;
         b.t.setAttribute("visibility", "visible");
-      }));
+      }); });
       for (let i = n; i < pool.length; i++) {
         pool[i].r.setAttribute("visibility", "hidden");
         pool[i].t.setAttribute("visibility", "hidden");
