@@ -52,11 +52,20 @@ function signalString(green) {
   );
 }
 
+// A plan like a real four-way junction's, with no conflicting movements on
+// green together: right turns and bikes run with the traffic going ahead,
+// left turns get their own stage, and people cross in a stage of their own.
+const AHEAD_RIGHT_BIKE = { straight: 1, right: 1, bike: 1 };
 const DEMO_PHASES = [
-  { name: "N–S ahead", duration: 24, signalString: signalString({ N: { straight: 1 }, S: { straight: 1 } }) },
+  { name: "N–S ahead", duration: 20, signalString: signalString({ N: AHEAD_RIGHT_BIKE, S: AHEAD_RIGHT_BIKE }) },
   { name: "N–S left", duration: 10, signalString: signalString({ N: { left: 1 }, S: { left: 1 } }) },
-  { name: "E–W ahead", duration: 20, signalString: signalString({ E: { straight: 1 }, W: { straight: 1 } }) },
+  { name: "E–W ahead", duration: 18, signalString: signalString({ E: AHEAD_RIGHT_BIKE, W: AHEAD_RIGHT_BIKE }) },
   { name: "E–W left", duration: 10, signalString: signalString({ E: { left: 1 }, W: { left: 1 } }) },
+  {
+    name: "Pedestrians",
+    duration: 12,
+    signalString: signalString({ N: { pedestrian: 1 }, E: { pedestrian: 1 }, S: { pedestrian: 1 }, W: { pedestrian: 1 } }),
+  },
 ];
 const DEMO_AMBER_S = 3;
 
