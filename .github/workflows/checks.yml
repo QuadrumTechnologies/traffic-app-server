@@ -32,3 +32,5 @@ jobs:
         run: node test/status.test.js
       - name: Backup and restore
         run: node test/backup-restore.test.js
+      - name: Database connection retries
+        run: node test/db-retry.test.js
