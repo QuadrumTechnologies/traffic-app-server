@@ -379,8 +379,11 @@ connectToMongoDB()
     });
   })
   .catch((error) => {
+    // db.js keeps trying, so this is a last resort: exit, and let systemd
+    // start the API again rather than leave it running without listening.
     console.log(
       error.message || error,
       "Connection to MongoDB was unsuccessful."
     );
+    process.exit(1);
   });
